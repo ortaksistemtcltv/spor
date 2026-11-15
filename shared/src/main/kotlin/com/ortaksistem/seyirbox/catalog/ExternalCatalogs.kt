@@ -32,7 +32,7 @@ private object WebteIzle : HtmlCatalog(
     "Webteİzle", "https://webteizle.info/", "film-izle/", "div.golgever a.image[href]",
     Regex("/hakkinda/[^/]+/?"), responseCharset = "windows-1254",
 ) {
-    override fun browserPlaybackPage(document: Document): String =
+    override fun playbackPage(document: Document): String =
         document.select("a[href^=/izle/altyazi/], a[href^=/izle/dublaj/]").asSequence()
             .map { it.absUrl("href") }.firstOrNull(::supports) ?: document.location()
 }
@@ -46,13 +46,19 @@ internal class BroadcasterCatalog(name: String, home: String, logo: String) : Ht
     },
 ) {
     val liveCard = Card("$name Canlı Yayın", home + "canli-izle", logo)
-    val archiveCard = Card("$name Program Arşivi", firstPage, logo)
 
-    fun playbackCard(url: String): Card? {
-        if (!supports(url)) return null
-        val path = URI(url).path.trimEnd('/')
-        return listOf(liveCard, archiveCard).firstOrNull { URI(it.url).path == path }
+    fun isLivePage(url: String): Boolean = supports(url) &&
+        URI(url).path.trimEnd('/') == URI(liveCard.url).path
+
+    override suspend fun embeddedMedia(document: Document): List<Media> {
+        val metaPath = playerMetadata.find(document.select("script:not([src])").joinToString("\n") { it.data() })
+            ?.groupValues?.get(1) ?: return emptyList()
+        val endpoint = URI(home).resolve(metaPath).toString()
+        val response = read(endpoint, searchRequest = true, referer = document.location()) ?: return emptyList()
+        return jsonMedia(jsonValue(response.body), response.url, document.location())
     }
+
+    private val playerMetadata = Regex("""\bmetaUrl\s*:\s*['"](/player/info\?referenceId=[A-Za-z0-9_-]{1,80})['"]""")
 
     override suspend fun search(query: String): List<Card> {
         val term = query.trim()
@@ -168,6 +174,22 @@ private class DiziFilmIzle(private val series: Boolean) : HtmlCatalog(
     override fun handles(url: String): Boolean =
         supports(url) && URI(url).path.orEmpty().startsWith(if (series) "/dizi/" else "/film/")
 
+    override fun embeddedPlayers(document: Document): List<String> {
+        val field = if (series) "episode" else "movie"
+        val script = document.select("script:not([src])").asSequence().map(Element::data)
+            .filter { it.startsWith("self.__next_f.push(") }
+        val players = script.mapNotNull { encoded ->
+            (jsonValue(encoded.removePrefix("self.__next_f.push(").removeSuffix(")")) as? JSONArray)?.optString(1)
+        }.flatMap { flight ->
+            Regex("\"$field\"\\s*:\\s*(?=\\{)").findAll(flight).mapNotNull { match ->
+                jsonValue(flight.substring(match.range.last + 1)) as? JSONObject
+            }
+        }.flatMap { item ->
+            sequenceOf("embed_player_url_1", "embed_player_url_2").map(item::optString)
+        }.filter(::isHttpsUrl).distinct().take(4).toList()
+        return players + super.embeddedPlayers(document)
+    }
+
     override fun episodeUrls(document: Document): Sequence<String> =
         super.episodeUrls(document) + document.select("script[type=application/ld+json]").asSequence()
             .flatMap { scriptJson(it).episodeUrls(0) }
@@ -203,7 +225,7 @@ private object RareFilmm : HtmlCatalog(
     posterContainer = ".post",
     searchPath = "?s=",
 ) {
-    private fun publicEmbeds(document: Document): List<String> =
+    override fun embeddedPlayers(document: Document): List<String> =
         document.select(".entry-content iframe[src]").mapNotNull { element ->
             val url = element.absUrl("src")
             if (!isHttpsUrl(url)) return@mapNotNull null
@@ -214,7 +236,7 @@ private object RareFilmm : HtmlCatalog(
         }.distinct()
 
     override suspend fun embeddedMedia(document: Document): List<Media> =
-        publicEmbeds(document).flatMap { url ->
+        embeddedPlayers(document).flatMap { url ->
             OkPublicPlayer.fetch(url)?.let(OkPublicPlayer::streams).orEmpty()
         }
 

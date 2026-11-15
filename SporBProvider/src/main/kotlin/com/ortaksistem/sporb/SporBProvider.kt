@@ -12,24 +12,19 @@ import com.lagradost.cloudstream3.mainPage
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newLiveSearchResponse
 import com.lagradost.cloudstream3.newLiveStreamLoadResponse
-import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import com.ortaksistem.seyirbox.catalog.WebPlayback
 import com.ortaksistem.seyirbox.catalog.CatalogProvider
 import com.ortaksistem.seyirbox.catalog.filmCatalogs
 import com.ortaksistem.seyirbox.catalog.seriesCatalogs
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.coroutineScope
 import java.text.Normalizer
 import java.util.Locale
 
-class SporBProvider internal constructor(
-    private val openWebChannel: suspend (SportsWebChannel) -> Boolean,
-) : MainAPI() {
-    constructor() : this({ WebPlayback.open(it.name, it.page, it.waitSeconds) })
-
+class SporBProvider : MainAPI() {
     override var name = "SEYİRBOX"
     override var mainUrl = "https://github.com/" + SporBCatalogue.repository
     override var lang = "tr"
@@ -47,17 +42,13 @@ class SporBProvider internal constructor(
     }
     private val webPageProviders = webPages.associate { (page, provider) -> page.data to provider }
 
-    private val browserGroups = SportsWebCatalogue.groups.associateBy { it.id }
-    private val browserChannels = browserGroups.values.flatMap { it.channels }.associateBy { it.id }
-    private val browserPrefix get() = "$mainUrl/spor-web/"
-
-    override val mainPage: List<MainPageData> = webPages.map { it.first } + listOf(
-        mainPage("resmi", "Yayıncı Kaynakları", horizontalImages = true),
-        mainPage("Tvjustin", "JUSTIN SPOR", horizontalImages = true),
-        mainPage("Trgoals", "TRGOALS", horizontalImages = true),
-        mainPage("DoğuSpor", "DOĞU SPOR", horizontalImages = true),
-        mainPage("Vavoo Turkey", "VAVOO SPOR", horizontalImages = true),
-    ) + browserGroups.values.map { mainPage(it.id, it.name, horizontalImages = true) }
+    private val portalGroups = SportsWebCatalogue.groups.associateBy { it.id }
+    private val portalChannels = portalGroups.values.flatMap { it.channels }.associateBy { it.id }
+    private fun matchNativeChannel(channel: SportsWebChannel): SportsChannel? {
+        val key = channelKey(channel.name)
+        return officialByName[key]
+    }
+    private val portalPrefix get() = "$mainUrl/spor-web/"
 
     private fun webProvider(url: String): CatalogProvider? = when {
         film.handles(url) -> film
@@ -90,6 +81,15 @@ class SporBProvider internal constructor(
     private val allChannels = official + channels
     private val officialByName = official.associateBy { channelKey(it.name) }
     private val mirrorsByName = channels.groupBy { channelKey(it.name) }
+
+    override val mainPage: List<MainPageData> = webPages.map { it.first } + listOf(
+        mainPage("resmi", "Yayıncı Kaynakları", horizontalImages = true),
+        mainPage("Tvjustin", "JUSTIN SPOR", horizontalImages = true),
+        mainPage("Trgoals", "TRGOALS", horizontalImages = true),
+        mainPage("DoğuSpor", "DOĞU SPOR", horizontalImages = true),
+        mainPage("Vavoo Turkey", "VAVOO SPOR", horizontalImages = true),
+    ) + portalGroups.values.filter { group -> group.channels.any { matchNativeChannel(it) != null } }
+        .map { mainPage(it.id, it.name, horizontalImages = true) }
 
     private fun channelKey(name: String): String {
         val plain = Normalizer.normalize(name.lowercase(Locale.ROOT).replace('ı', 'i'), Normalizer.Form.NFKD)
@@ -153,18 +153,18 @@ class SporBProvider internal constructor(
             posterUrl = ChannelArtwork.posterUrl(channelKey(channel.name), portrait)
         }
 
-    private fun browserChannel(url: String): SportsWebChannel? =
-        url.takeIf { it.startsWith(browserPrefix) }?.removePrefix(browserPrefix)?.let(browserChannels::get)
+    private fun portalChannel(url: String): SportsWebChannel? =
+        url.takeIf { it.startsWith(portalPrefix) }?.removePrefix(portalPrefix)?.let(portalChannels::get)
 
-    private fun browserCard(channel: SportsWebChannel, portrait: Boolean = false): SearchResponse =
-        newLiveSearchResponse(channel.name, browserPrefix + channel.id, TvType.Live, fix = false) {
+    private fun portalCard(channel: SportsWebChannel, portrait: Boolean = false): SearchResponse =
+        newLiveSearchResponse(channel.name, portalPrefix + channel.id, TvType.Live, fix = false) {
             posterUrl = ChannelArtwork.posterUrl(channelKey(channel.name), portrait)
         }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         webPageProviders[request.data]?.let { return it.getMainPage(page, request) }
         val items = if (page == 1) {
-            browserGroups[request.data]?.channels?.map { browserCard(it) }
+            portalGroups[request.data]?.channels?.filter { matchNativeChannel(it) != null }?.map { portalCard(it) }
                 ?: channelsForGroup(request.data).map { card(it) }
         } else emptyList()
         return newHomePageResponse(request, items, hasNext = false)
@@ -184,25 +184,22 @@ class SporBProvider internal constructor(
         val sports = allChannels.filter { row ->
             listOf(row.name, row.group, row.source, sourceLabel(row.source)).any { it.lowercase(locale).contains(term) }
         }.map { card(it, portrait = true) }
-        val browser = browserGroups.values.flatMap { group ->
+        val portalCards = portalGroups.values.flatMap { group ->
             group.channels.filter { channel ->
-                channel.name.lowercase(locale).contains(term) || group.name.lowercase(locale).contains(term)
-            }.map { browserCard(it, portrait = true) }
+                matchNativeChannel(channel) != null &&
+                    (channel.name.lowercase(locale).contains(term) || group.name.lowercase(locale).contains(term))
+            }.map { portalCard(it, portrait = true) }
         }
-        filmResults.await() + diziResults.await() + sports + browser
+        filmResults.await() + diziResults.await() + sports + portalCards
     }
 
     override suspend fun load(url: String): LoadResponse? {
         webProvider(url)?.let { return it.load(url) }
-        browserChannel(url)?.let { channel ->
-            return newMovieLoadResponse(channel.name, channel.page, TvType.CustomMedia, url) {
-                uniqueUrl = url
+        portalChannel(url)?.let { channel ->
+            val native = matchNativeChannel(channel) ?: return null
+            return newLiveStreamLoadResponse(channel.name, url, url) {
                 posterUrl = ChannelArtwork.posterUrl(channelKey(channel.name))
-                plot = if (channel.waitSeconds > 0) {
-                    "Oynat’a basınca ${channel.waitSeconds} saniye sonra yayın sayfası uygulama içindeki web oynatıcıda açılır."
-                } else {
-                    "Oynat’a basınca kaynak sayfası uygulama içindeki web oynatıcıda açılır."
-                }
+                plot = "${sourceLabel(native.source)} yayın kaynağı"
             }
         }
         val row = findChannel(url) ?: return null
@@ -221,9 +218,11 @@ class SporBProvider internal constructor(
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
         webProvider(data)?.let { return it.loadLinks(data, isCasting, subtitleCallback, callback) }
-        browserChannel(data)?.let { return !isCasting && openWebChannel(it) }
-        val row = findChannel(data) ?: return false
+        val channel = portalChannel(data)
+        val row = if (channel == null) findChannel(data) else matchNativeChannel(channel)
+        if (row == null) return false
         val streams = streamsFor(row)
+        if (channel != null && streams.isNotEmpty()) delay(channel.waitSeconds * 1_000L)
         streams.forEach { stream ->
             val path = stream.url.substringBefore('#')
             val type = when {

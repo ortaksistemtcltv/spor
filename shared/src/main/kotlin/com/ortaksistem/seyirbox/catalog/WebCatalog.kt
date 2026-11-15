@@ -2,6 +2,7 @@ package com.ortaksistem.seyirbox.catalog
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -49,7 +50,9 @@ internal abstract class WebCatalog(val label: String, val home: String) {
 
     open suspend fun embeddedMedia(document: Document): List<Media> = emptyList()
 
-    open fun browserPlaybackPage(document: Document): String = document.location()
+    open fun playbackPage(document: Document): String = document.location()
+
+    open fun embeddedPlayers(document: Document): List<String> = iframePlayers(document)
 
     open fun isDetailUrl(url: String): Boolean = handles(url) &&
         httpsUri(url)?.path?.trim('/')?.isNotBlank() == true
@@ -73,16 +76,16 @@ internal abstract class WebCatalog(val label: String, val home: String) {
 
     protected data class Page(val url: String, val body: String)
 
-    protected suspend fun read(url: String, searchRequest: Boolean = false): Page? = withContext(Dispatchers.IO) {
+    protected suspend fun read(url: String, searchRequest: Boolean = false, referer: String? = null): Page? = withContext(Dispatchers.IO) {
         if (!supports(url)) return@withContext null
         try {
-            fetchPage(url, searchRequest)
+            fetchPage(url, searchRequest, referer)
         } catch (_: IOException) {
             null
         }
     }
 
-    private fun fetchPage(url: String, searchRequest: Boolean): Page? {
+    private fun fetchPage(url: String, searchRequest: Boolean, referer: String?): Page? {
         var address = URI(url)
         repeat(4) {
             val connection = address.toURL().openConnection() as HttpURLConnection
@@ -90,6 +93,7 @@ internal abstract class WebCatalog(val label: String, val home: String) {
                 connection.instanceFollowRedirects = false
                 connection.connectTimeout = 8_000
                 connection.readTimeout = 8_000
+                if (referer != null && supports(referer)) connection.setRequestProperty("Referer", referer)
                 if (searchRequest) {
                     connection.setRequestProperty("Accept", "application/json,text/html")
                     connection.setRequestProperty("X-Requested-With", "fetch")
@@ -134,7 +138,7 @@ internal abstract class WebCatalog(val label: String, val home: String) {
     }
 }
 
-private fun httpsUri(url: String): URI? =
+internal fun httpsUri(url: String): URI? =
     runCatching { URI(url) }.getOrNull()?.takeIf {
         it.scheme == "https" && it.host != null && it.userInfo == null
     }
@@ -161,13 +165,28 @@ internal fun publicMedia(document: Document): List<Media> =
             )
         }.distinctBy(Media::url)
 
+internal fun structuredMedia(document: Document): List<Media> =
+    document.select("script[type=application/ld+json], script[type=application/json][data-player]")
+        .flatMap { script ->
+            val metadata = jsonValue(script.data())
+            if (script.attr("type") == "application/ld+json") {
+                val video = metadata as? JSONObject ?: return@flatMap emptyList()
+                val title = video.optString("name")
+                if (video.optString("@type") != "VideoObject" ||
+                    title.contains("fragman", true) || title.contains("trailer", true)
+                ) return@flatMap emptyList()
+            }
+            jsonMedia(metadata, document.location())
+        }
+
 internal fun mediaAt(url: String, mime: String): Media? {
     val uri = httpsUri(url) ?: return null
     val path = uri.path.orEmpty().lowercase(Locale.ROOT)
+    val contentType = mime.substringBefore(';').trim().lowercase(Locale.ROOT)
     val format = when {
-        path.endsWith(".m3u8") || mime in setOf("application/vnd.apple.mpegurl", "application/x-mpegurl", "audio/mpegurl") -> MediaFormat.HLS
-        path.endsWith(".mpd") || mime == "application/dash+xml" -> MediaFormat.DASH
-        path.endsWith(".mp4") || path.endsWith(".webm") || mime == "video/mp4" || mime == "video/webm" -> MediaFormat.VIDEO
+        path.endsWith(".m3u8") || contentType in setOf("application/vnd.apple.mpegurl", "application/x-mpegurl", "audio/mpegurl") -> MediaFormat.HLS
+        path.endsWith(".mpd") || contentType == "application/dash+xml" -> MediaFormat.DASH
+        path.endsWith(".mp4") || path.endsWith(".webm") || contentType == "video/mp4" || contentType == "video/webm" -> MediaFormat.VIDEO
         else -> return null
     }
     return Media(url, format)

@@ -1,0 +1,103 @@
+package com.ortaksistem.seyirbox.catalog
+
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.extractorApis
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.CancellationException
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
+import org.json.JSONTokener
+import org.jsoup.nodes.Document
+import java.net.URI
+
+internal suspend fun emitNativeLinks(
+    provider: String,
+    label: String,
+    document: Document,
+    media: List<Media>,
+    embeds: List<String>,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit,
+): Boolean {
+    val seen = mutableSetOf<String>()
+    for (item in media.distinctBy(Media::url)) {
+        val type = when (item.format) {
+            MediaFormat.HLS -> ExtractorLinkType.M3U8
+            MediaFormat.DASH -> ExtractorLinkType.DASH
+            MediaFormat.VIDEO -> ExtractorLinkType.VIDEO
+        }
+        seen += item.url
+        callback(newExtractorLink(provider, label, item.url, type) {
+            referer = item.referer ?: document.location()
+            item.resolution?.let { quality = it }
+        })
+    }
+    for (url in embeds.distinct().take(6)) {
+        if (url in seen) continue
+        val player = httpsUri(url) ?: continue
+        if (player.port !in setOf(-1, 443)) continue
+        val extractor = extractorApis.asReversed().firstOrNull {
+            httpsUri(it.mainUrl)?.host.equals(player.host, ignoreCase = true)
+        } ?: continue
+        try {
+            extractor.getUrl(url, document.location(), subtitleCallback) { link ->
+                if (isHttpsUrl(link.url) && link.type in nativeTypes && seen.add(link.url)) callback(link)
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            // Continue with the remaining players if this source fails.
+        }
+    }
+    return seen.isNotEmpty()
+}
+
+private val nativeTypes = setOf(ExtractorLinkType.M3U8, ExtractorLinkType.DASH, ExtractorLinkType.VIDEO)
+
+internal fun iframePlayers(document: Document): List<String> =
+    document.select("iframe[src], iframe[data-src]").asSequence()
+        .filterNot { frame ->
+            listOf(frame.id(), frame.attr("title"), frame.className()).any {
+                it.contains("trailer", true) || it.contains("fragman", true)
+            }
+        }
+        .flatMap { frame -> sequenceOf(frame.absUrl("src"), frame.absUrl("data-src")) }
+        .filter(::isHttpsUrl)
+        .distinct()
+        .take(6)
+        .toList()
+
+internal fun jsonValue(text: String): Any? = try {
+    JSONTokener(text).nextValue()
+} catch (_: JSONException) {
+    null
+}
+
+internal fun jsonMedia(value: Any?, baseUrl: String, referer: String = baseUrl, depth: Int = 0): List<Media> {
+    if (depth > 5) return emptyList()
+    return when (value) {
+        is JSONArray -> (0 until minOf(value.length(), 24)).flatMap { jsonMedia(value.opt(it), baseUrl, referer, depth + 1) }
+        is JSONObject -> {
+            if (sequenceOf("drm", "keySystem", "licenseUrl", "widevine", "playready", "fairplay", "contentProtection").any {
+                value.has(it) && !value.isNull(it) && value.opt(it) != false && value.optString(it).isNotBlank()
+            }) return emptyList()
+            val mime = sequenceOf("type", "mimeType", "encodingFormat")
+                .map(value::optString).firstOrNull(String::isNotBlank).orEmpty()
+            val urls = sequenceOf("url", "file", "src", "contentUrl", "streamUrl", "hlsUrl", "dashUrl")
+                .map(value::optString).filter(String::isNotBlank)
+                .mapNotNull { resolveMedia(baseUrl, it, mime, referer) }.toList()
+            urls + sequenceOf("data", "sources", "streams", "playlist", "video", "videos", "media")
+                .flatMap { jsonMedia(value.opt(it), baseUrl, referer, depth + 1) }.toList()
+        }
+        is String -> listOfNotNull(resolveMedia(baseUrl, value, "", referer))
+        else -> emptyList()
+    }
+}
+
+private fun resolveMedia(baseUrl: String, value: String, mime: String, referer: String): Media? {
+    val url = runCatching { URI(baseUrl).resolve(value).toString() }.getOrNull() ?: return null
+    return mediaAt(url, mime)?.copy(referer = referer)
+}
