@@ -27,8 +27,6 @@ class SporBProvider : MainAPI() {
         "Trgoals" to "SPOR 2",
         "DoğuSpor" to "SPOR 3",
         "Vavoo Turkey" to "SPOR 4",
-        "spor5" to "SPOR 5",
-        "spor6" to "SPOR 6",
     )
 
     private val displaySourceNames = mapOf(
@@ -56,12 +54,6 @@ class SporBProvider : MainAPI() {
     private val allChannels = official + channels
     private val officialByName = official.associateBy { channelKey(it.name) }
     private val mirrorsByName = channels.groupBy { channelKey(it.name) }
-    private val importedGroups = SporBCatalogue.groupNames.mapValues { (_, names) ->
-        names.distinctBy(::channelKey).mapNotNull { channelName ->
-            val key = channelKey(channelName)
-            officialByName[key] ?: mirrorsByName[key]?.firstOrNull()
-        }.distinctBy { it.id }
-    }
 
     private fun channelKey(name: String): String {
         val plain = Normalizer.normalize(name.lowercase(Locale.ROOT).replace('ı', 'i'), Normalizer.Form.NFKD)
@@ -127,7 +119,6 @@ class SporBProvider : MainAPI() {
     private fun channelsForGroup(source: String): List<SportsChannel> =
         when (source) {
             "resmi" -> official
-            "spor5", "spor6" -> importedGroups[source].orEmpty()
             else -> channels.filter { it.source == source }
         }
 
