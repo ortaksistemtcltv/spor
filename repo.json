@@ -1,6 +1,6 @@
 {
-  "name": "SPOR",
-  "description": "Türkçe spor canlı yayın kataloğu",
+  "name": "SEYİRBOX",
+  "description": "Türkçe CloudStream eklenti deposu · Film, Dizi ve Spor",
   "manifestVersion": 1,
   "pluginLists": [
     "https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/plugins.json"
