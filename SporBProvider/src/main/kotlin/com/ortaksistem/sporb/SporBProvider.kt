@@ -27,6 +27,8 @@ class SporBProvider : MainAPI() {
         "Trgoals" to "SPOR 2",
         "DoğuSpor" to "SPOR 3",
         "Vavoo Turkey" to "SPOR 4",
+        "spor5" to "SPOR 5",
+        "spor6" to "SPOR 6",
     )
 
     private val displaySourceNames = mapOf(
@@ -54,6 +56,12 @@ class SporBProvider : MainAPI() {
     private val allChannels = official + channels
     private val officialByName = official.associateBy { channelKey(it.name) }
     private val mirrorsByName = channels.groupBy { channelKey(it.name) }
+    private val importedGroups = SporBCatalogue.groupNames.mapValues { (_, names) ->
+        names.distinctBy(::channelKey).mapNotNull { channelName ->
+            val key = channelKey(channelName)
+            officialByName[key] ?: mirrorsByName[key]?.firstOrNull()
+        }.distinctBy { it.id }
+    }
 
     private fun channelKey(name: String): String {
         val plain = Normalizer.normalize(name.lowercase(Locale.ROOT).replace('ı', 'i'), Normalizer.Form.NFKD)
@@ -69,7 +77,7 @@ class SporBProvider : MainAPI() {
             .replace(Regex("^beinsports\\b"), "bein sports")
             .replace(Regex("^bein sports ([12]) max$"), "bein sports max $1")
             .replace(Regex("^exxen (?:tv )?spor(?:ts)? (?=[0-9])"), "exxen sports ")
-            .replace(Regex("^eurosport(?=[12]$)"), "eurosport ")
+            .replace(Regex("^euro ?sport ?(?=[12]$)"), "eurosport ")
             .replace(Regex("^(?:tivibuspor|tivibu sports?)\\b"), "tivibu spor")
             .replace(Regex("^spor smart\\b"), "smart spor")
             .replace(Regex("^s sports? 1$"), "s sport")
@@ -114,11 +122,14 @@ class SporBProvider : MainAPI() {
         newLiveSearchResponse(channel.name, itemUrl(channel), TvType.Live, fix = false)
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest) =
-        newHomePageResponse(
-            request.name,
-            (if (request.data == "resmi") official else channels.filter { it.source == request.data }).map(::card),
-            hasNext = false,
-        )
+        newHomePageResponse(request.name, channelsForGroup(request.data).map(::card), hasNext = false)
+
+    private fun channelsForGroup(source: String): List<SportsChannel> =
+        when (source) {
+            "resmi" -> official
+            "spor5", "spor6" -> importedGroups[source].orEmpty()
+            else -> channels.filter { it.source == source }
+        }
 
     override suspend fun search(query: String): List<SearchResponse> {
         val term = query.trim().lowercase(locale)

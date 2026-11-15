@@ -30,6 +30,18 @@ for index, row in enumerate(rows, 1):
     headers = ", ".join(f"{quote(k)} to {quote(v)}" for k, v in row["headers"].items())
     values = ", ".join(quote(row[key]) for key in ("name", "group", "source", "url"))
     lines.append(f"        SportsChannel({index}, {values}, mapOf({headers})),")
+lines.extend(["    )", "    val groupNames = mapOf("])
+for key, filename in (
+    ("spor5", "spor5-patronizle-kanallar.json"),
+    ("spor6", "spor6-selcuksports-kanallar.json"),
+):
+    group = json.loads((root / "data" / filename).read_text(encoding="utf-8"))
+    names = [entry["name"] for entry in group["channels"]]
+    if not names or any(not isinstance(name, str) or not name.strip() for name in names):
+        raise SystemExit(f"Geçersiz kanal listesi: {filename}")
+    lines.append(f"        {quote(key)} to listOf(")
+    lines.extend(f"            {quote(name)}," for name in names)
+    lines.append("        ),")
 lines.extend(["    )", "}", ""])
 target = root / "SporBProvider/src/main/kotlin/com/ortaksistem/sporb/SporBCatalogue.kt"
 target.write_text("\n".join(lines), encoding="utf-8")
