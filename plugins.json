@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-ca47f99c74252b8d014cdfcad62349720fdfefb19ece97764abb4849abffd8cb",
+    "fileHash": "sha256-61668af80927ee93706d851c0ae3d8c2dd84e7b7899a88eb0573f870841b829a",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/ortaksistemtcltv/spor",
-    "fileSize": 106364,
+    "fileSize": 113805,
     "status": 1,
     "language": "tr",
     "authors": [
@@ -14,7 +14,7 @@
       "TvSeries",
       "Live"
     ],
-    "version": 20,
+    "version": 21,
     "internalName": "SporBProvider",
     "description": "Film, dizi ve canlı spor kaynakları",
     "url": "https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/SporBProvider.cs3",
