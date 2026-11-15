@@ -46,21 +46,37 @@ class SporBProvider : MainAPI() {
     private val officialByName = official.associateBy { channelKey(it.name) }
     private val mirrorsByName = channels.groupBy { channelKey(it.name) }
 
-    private fun channelKey(name: String): String =
-        Normalizer.normalize(name.lowercase(Locale.ROOT).replace('ı', 'i'), Normalizer.Form.NFKD)
+    private fun channelKey(name: String): String {
+        val plain = Normalizer.normalize(name.lowercase(Locale.ROOT).replace('ı', 'i'), Normalizer.Form.NFKD)
             .filterNot { Character.getType(it) == Character.NON_SPACING_MARK.toInt() }
-            .replace(Regex("[^a-z0-9]+"), " ")
             .trim()
+            .replace(Regex("^4k\\s+tr:\\s*"), "")
+            .replace(Regex("\\s+\\.[abcs]$"), "")
+            .replace(Regex("\\s+\\((?:[0-9]{3,4}p|turkey)\\)$"), "")
+            .replace(Regex("(?:\\s+(?:4k|uhd|fhd|hd|sd|hevc|[0-9]{3,4}p|[0-9]+ fps))+$"), "")
+            .replace(Regex("[^a-z0-9+]+"), " ")
+            .trim()
+        return plain
+            .replace(Regex("^beinsports\\b"), "bein sports")
+            .replace(Regex("^bein sports ([12]) max$"), "bein sports max $1")
+            .replace(Regex("^exxen (?:tv )?spor(?:ts)? (?=[0-9])"), "exxen sports ")
+            .replace(Regex("^eurosport(?=[12]$)"), "eurosport ")
+            .replace(Regex("^(?:tivibuspor|tivibu sports?)\\b"), "tivibu spor")
+            .replace(Regex("^spor smart\\b"), "smart spor")
+            .replace(Regex("^s sports? 1$"), "s sport")
+            .replace(Regex("^s sports 2$"), "s sport 2")
+    }
 
     private fun streamsFor(channel: SportsChannel): List<Stream> {
         val key = channelKey(channel.name)
         val broadcaster = officialByName[key]
+        val matches = mirrorsByName[key].orEmpty()
         val matchingChannels = if (broadcaster != null) {
             if (channel.id == broadcaster.id) listOf(broadcaster) else {
-                listOf(broadcaster, channel) + mirrorsByName[key].orEmpty()
+                listOf(broadcaster, channel) + matches
             }
         } else {
-            listOf(channel) + mirrorsByName[key].orEmpty()
+            listOf(channel) + matches
         }
 
         return matchingChannels.distinctBy { it.id }.flatMap { match ->
