@@ -40,11 +40,11 @@ class SporBProvider : MainAPI() {
     private val webPageProviders = webPages.associate { (page, provider) -> page.data to provider }
 
     override val mainPage: List<MainPageData> = webPages.map { it.first } + listOf(
-        mainPage("resmi", "SPOR · Yayıncı Kaynakları"),
-        mainPage("Tvjustin", "SPOR · JUSTIN SPOR"),
-        mainPage("Trgoals", "SPOR · TRGOALS"),
-        mainPage("DoğuSpor", "SPOR · DOĞU SPOR"),
-        mainPage("Vavoo Turkey", "SPOR · VAVOO SPOR"),
+        mainPage("resmi", "SPOR · Yayıncı Kaynakları", horizontalImages = true),
+        mainPage("Tvjustin", "SPOR · JUSTIN SPOR", horizontalImages = true),
+        mainPage("Trgoals", "SPOR · TRGOALS", horizontalImages = true),
+        mainPage("DoğuSpor", "SPOR · DOĞU SPOR", horizontalImages = true),
+        mainPage("Vavoo Turkey", "SPOR · VAVOO SPOR", horizontalImages = true),
     )
 
     private fun webProvider(url: String): CatalogProvider? = when {
@@ -136,13 +136,15 @@ class SporBProvider : MainAPI() {
         return byId[id]
     }
     private fun itemUrl(channel: SportsChannel) = "$mainUrl/sporb/${channel.id}"
-    private fun card(channel: SportsChannel) =
-        newLiveSearchResponse(channel.name, itemUrl(channel), TvType.Live, fix = false)
+    private fun card(channel: SportsChannel, portrait: Boolean = false) =
+        newLiveSearchResponse(channel.name, itemUrl(channel), TvType.Live, fix = false) {
+            posterUrl = ChannelArtwork.posterUrl(channelKey(channel.name), portrait)
+        }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         webPageProviders[request.data]?.let { return it.getMainPage(page, request) }
-        val items = if (page == 1) channelsForGroup(request.data).map(::card) else emptyList()
-        return newHomePageResponse(request.name, items, hasNext = false)
+        val items = if (page == 1) channelsForGroup(request.data).map { card(it) } else emptyList()
+        return newHomePageResponse(request, items, hasNext = false)
     }
 
     private fun channelsForGroup(source: String): List<SportsChannel> =
@@ -158,7 +160,7 @@ class SporBProvider : MainAPI() {
         val diziResults = async { dizi.search(query) }
         val sports = allChannels.filter { row ->
             listOf(row.name, row.group, row.source, sourceLabel(row.source)).any { it.lowercase(locale).contains(term) }
-        }.map(::card)
+        }.map { card(it, portrait = true) }
         filmResults.await() + diziResults.await() + sports
     }
 
@@ -166,6 +168,7 @@ class SporBProvider : MainAPI() {
         webProvider(url)?.let { return it.load(url) }
         val row = findChannel(url) ?: return null
         return newLiveStreamLoadResponse(row.name, itemUrl(row), itemUrl(row)) {
+            posterUrl = ChannelArtwork.posterUrl(channelKey(row.name))
             val count = streamsFor(row).size
             plot = "${row.group} · ${sourceLabel(row.source)}" +
                 if (count > 1) "\n$count kaynak var. Yayın açılmazsa Kaynaklar menüsünden diğerini seç." else ""
