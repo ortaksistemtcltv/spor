@@ -21,10 +21,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - name: Eklentiyi derle
         run: |
-          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [[ ! -f "$ANDROID_HOME/platforms/android-35/android.jar" || ! -x "$ANDROID_HOME/build-tools/35.0.0/d8" ]]; then
+            "$sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+          fi
           python3 scripts/generate_catalogue.py
           bash gradlew make makePluginsJson
       - name: Depo dosyalarını hazırla
