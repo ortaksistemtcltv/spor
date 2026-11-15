@@ -1,9 +1,13 @@
 package com.ortaksistem.seyirbox.catalog
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import org.json.JSONTokener
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URI
@@ -12,7 +16,7 @@ import java.util.Locale
 internal val filmCatalogs: List<WebCatalog> = listOf(
     FilmCehennemi,
     DiziFilmIzle(series = false),
-    HtmlCatalog("Jetfilmizle", "https://jetfilmizle.app/", "filmler", "a[href]:has(.fc-title)", filmPath, ".fc-title", searchPath = "arama?q="),
+    JetFilmIzle,
     HtmlCatalog("SinemaGG", "https://sinemacc.com/", "film-arsivi/", ".film_kutusu > a[href]:has(img)", filmPath, ".title .text"),
     WebteIzle,
     RareFilmm,
@@ -38,6 +42,39 @@ private object WebteIzle : HtmlCatalog(
 }
 
 private val filmPath get() = Regex("/film/[^/]+/?")
+
+internal object JetFilmIzle : HtmlCatalog(
+    "Jetfilmizle", "https://jetfilmizle.app/", "filmler", "a[href]:has(.fc-title)", filmPath,
+    ".fc-title", searchPath = "arama?q=",
+) {
+    private val playerEndpoint = home + "jetplayer"
+    private val playerIndex = Regex("[0-9]{1,3}")
+    private val filmIdentifier = Regex("[0-9]{1,12}")
+
+    internal fun playerForms(document: Document): List<Map<String, String>> {
+        val filmId = document.selectFirst("input[name=film_id]")?.attr("value")
+            ?.takeIf(filmIdentifier::matches) ?: return emptyList()
+        return document.select(".player-source-btn[data-source-index][data-player-type]").asSequence()
+            .mapNotNull { button ->
+                val index = button.attr("data-source-index").takeIf(playerIndex::matches) ?: return@mapNotNull null
+                val type = button.attr("data-player-type")
+                    .takeIf { it in setOf("dublaj", "altyazili", "genel") } ?: return@mapNotNull null
+                mapOf("film_id" to filmId, "source_index" to index, "player_type" to type)
+            }.distinct().take(6).toList()
+    }
+
+    override suspend fun extraPlayerDocuments(document: Document): List<Document> {
+        if (!supports(document.location())) return emptyList()
+        return coroutineScope {
+            playerForms(document).map { form ->
+                async {
+                    val response = read(playerEndpoint, referer = document.location(), form = form)
+                    response?.let { Jsoup.parseBodyFragment(it.body, it.url) }
+                }
+            }.awaitAll().filterNotNull()
+        }
+    }
+}
 
 internal class BroadcasterCatalog(name: String, home: String, logo: String) : HtmlCatalog(
     name, home, "kesfet", "section.grid.dyn-content .poster a[href]:has(img)",

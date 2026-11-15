@@ -9,6 +9,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -16,6 +17,7 @@ import org.json.JSONTokener
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URI
+import java.util.Locale
 
 internal data class PlayerPage(val url: String, val referer: String)
 internal data class NativeSources(val media: List<Media>, val players: List<PlayerPage>)
@@ -30,9 +32,10 @@ internal suspend fun WebCatalog.resolveMedia(
     val alternativeRequests = alternativePlayerUrls(document).distinct().take(6).map { url ->
         async { alternativeLoader(this@resolveMedia, url, original) }
     }
+    val additionalPlayers = async { extraPlayerDocuments(document) }
     val sameSitePlayers = primaryPlayers.filter(::supports).filter { it != original }.take(2)
     val playerPages = sameSitePlayers.mapNotNull { pageLoader(this@resolveMedia, it) }
-    val alternatives = alternativeRequests.awaitAll().filterNotNull()
+    val alternatives = alternativeRequests.awaitAll().filterNotNull() + additionalPlayers.await()
     val documents = listOf(document) + playerPages + alternatives
     val allPlayers = documents.flatMap { page ->
         val referer = if (page in alternatives) original else page.location()
@@ -55,7 +58,7 @@ internal suspend fun emitNativeLinks(
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit,
 ): Boolean {
-    val seen = mutableSetOf<String>()
+    val seen = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     for (item in media.distinctBy(Media::url)) {
         val type = when (item.format) {
             MediaFormat.HLS -> ExtractorLinkType.M3U8
@@ -72,17 +75,27 @@ internal suspend fun emitNativeLinks(
         if (url in seen) continue
         val player = httpsUri(url) ?: continue
         if (player.port !in setOf(-1, 443)) continue
-        val extractor = extractorApis.asReversed().firstOrNull {
-            httpsUri(it.mainUrl)?.host.equals(player.host, ignoreCase = true)
-        } ?: continue
-        try {
-            extractor.getUrl(url, referer, subtitleCallback) { link ->
-                if (isNativeLink(link) && seen.add(link.url)) callback(link)
+        val host = player.host.lowercase(Locale.ROOT).removePrefix("www.")
+        val matches = extractorApis.asReversed().filter {
+            val api = httpsUri(it.mainUrl)
+            api?.host?.lowercase(Locale.ROOT)?.removePrefix("www.") == host &&
+                api.port in setOf(-1, 443)
+        }
+        if (matches.isEmpty()) continue
+        for (extractor in matches.take(3)) {
+            val oldCount = seen.size
+            try {
+                withTimeoutOrNull(8_000) {
+                    extractor.getUrl(url, referer, subtitleCallback) { link ->
+                        if (isNativeLink(link) && seen.add(link.url)) callback(link)
+                    }
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                // Another registered extractor can support this player.
             }
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Exception) {
-            // Continue with the remaining players if this source fails.
+            if (seen.size > oldCount) break
         }
     }
     return seen.isNotEmpty()

@@ -29,9 +29,12 @@ internal object FilmCehennemi : WebCatalog("HDFilmCehennemi", "https://www.hdfil
 
     override fun handles(url: String): Boolean = providerHost(url) != null
 
+    override fun matchesInstalledProvider(api: MainAPI): Boolean =
+        api.name.equals(label, ignoreCase = true) && providerHost(api.mainUrl) != null
+
     internal fun installedProvider(url: String, candidates: Iterable<MainAPI> = APIHolder.allProviders): MainAPI? {
         val host = providerHost(url) ?: return null
-        val providers = candidates.filter { api -> api.name.equals(label, ignoreCase = true) && providerHost(api.mainUrl) != null }
+        val providers = candidates.filter(::matchesInstalledProvider)
         return providers.firstOrNull { providerHost(it.mainUrl) == host }
             ?: providers.firstOrNull().takeIf { url == firstPage }
     }

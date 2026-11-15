@@ -1,5 +1,6 @@
 package com.ortaksistem.seyirbox.catalog
 
+import com.lagradost.cloudstream3.APIHolder
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -9,6 +10,7 @@ import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
+import com.lagradost.cloudstream3.TvSeriesLoadResponse
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.newEpisode
 import com.lagradost.cloudstream3.newHomePageResponse
@@ -39,6 +41,7 @@ internal class CatalogProvider(
         source.fetchAlternativePlayer(url, referer)
     },
     private val findInstalledFilmProvider: (String) -> MainAPI? = FilmCehennemi::installedProviderForUrl,
+    private val installedProviders: () -> Iterable<MainAPI> = { APIHolder.allProviders },
 ) : MainAPI() {
     override var name = displayName
     override var mainUrl = sources.first().home
@@ -49,6 +52,7 @@ internal class CatalogProvider(
         val searchRequests = Semaphore(6)
         const val LEGACY_WEB_DATA = "seyirbox-web:"
         const val INSTALLED_FILM_DATA = "seyirbox-hdfilm:"
+        const val INSTALLED_DATA = "seyirbox-source:"
     }
 
     override val mainPage = mainPageOf(*sources.map { it.firstPage to it.menuLabel }.toTypedArray())
@@ -58,9 +62,7 @@ internal class CatalogProvider(
             ?: return newHomePageResponse(request.name, emptyList(), hasNext = false)
         if (page < 1) return newHomePageResponse(request.name, emptyList(), hasNext = false)
 
-        if (source === FilmCehennemi) {
-            installedFilmPage(source, page, request)?.let { return it }
-        }
+        installedPage(source, page, request)?.let { return it }
 
         val visited = mutableSetOf<String>()
         var next: String? = source.firstPage
@@ -91,8 +93,8 @@ internal class CatalogProvider(
     }
 
     fun handles(url: String): Boolean {
-        val page = if (url.startsWith(INSTALLED_FILM_DATA)) installedFilmData(url)?.first ?: return false else url
-        return sources.any { it.handles(page.removePrefix(LEGACY_WEB_DATA)) }
+        val page = playbackData(url)?.first ?: url.removePrefix(LEGACY_WEB_DATA)
+        return sources.any { it.handles(page) }
     }
 
     override suspend fun load(url: String): LoadResponse? {
@@ -101,16 +103,7 @@ internal class CatalogProvider(
             val card = source.liveCard
             return newLiveStreamLoadResponse(card.title, card.url, card.url) { posterUrl = card.poster }
         }
-        if (source === FilmCehennemi) {
-            installedMovie(url)?.let { movie ->
-                val playback = JSONObject().put("page", url).put("data", movie.dataUrl).toString()
-                return newMovieLoadResponse(movie.name, url, contentType, INSTALLED_FILM_DATA + playback) {
-                    posterUrl = movie.posterUrl
-                    plot = movie.plot
-                    year = movie.year
-                }
-            }
-        }
+        loadFromInstalled(source, url)?.let { return it }
         val document = pageLoader(source, url)
         val detail = document?.let { source.detail(it) }
         if (detail == null) {
@@ -148,67 +141,104 @@ internal class CatalogProvider(
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
-        val installedData = installedFilmData(data)
-        val page = installedData?.first ?: data.removePrefix(LEGACY_WEB_DATA)
+        val delegated = playbackData(data)
+        val page = delegated?.first ?: data.removePrefix(LEGACY_WEB_DATA)
         val source = sources.firstOrNull { it.handles(page) } ?: return false
-        if (source === FilmCehennemi) {
-            val installed = findInstalledFilmProvider(page)
-            val playData = installedData?.second ?: page
-            if (installed != null && emitInstalledLinks(installed, playData, isCasting, subtitleCallback, callback)) return true
+        val installed = findInstalledProvider(source, page)
+        if (installed != null && emitInstalledLinks(installed, delegated?.second ?: page, isCasting, subtitleCallback, callback)) {
+            return true
         }
-        val document = pageLoader(source, page) ?: return false
+        val fallbackPage = delegated?.second?.takeIf(source::handles)
+            ?: page.takeIf { delegated == null || contentType == TvType.Movie } ?: return false
+        val document = pageLoader(source, fallbackPage) ?: return false
         val streams = source.resolveMedia(document, pageLoader, alternativeLoader)
         return emitNativeLinks(name, source.label, document, streams.media, streams.players, subtitleCallback, callback)
     }
 
-    private fun installedFilmData(data: String): Pair<String, String>? {
-        if (!data.startsWith(INSTALLED_FILM_DATA) || data.length > 16_384) return null
-        val json = jsonValue(data.removePrefix(INSTALLED_FILM_DATA)) as? JSONObject ?: return null
-        val page = json.optString("page").takeIf(FilmCehennemi::handles) ?: return null
+    private fun findInstalledProvider(source: WebCatalog, url: String): MainAPI? {
+        if (source === FilmCehennemi) return findInstalledFilmProvider(url)
+        if (!source.handles(url) && url != source.firstPage) return null
+        return installedProviders().firstOrNull { api ->
+            api.name != name && source.matchesInstalledProvider(api) && contentType in api.supportedTypes
+        }
+    }
+
+    private fun playbackData(data: String): Pair<String, String>? {
+        if (data.length > 256_000) return null
+        val prefix = when {
+            data.startsWith(INSTALLED_DATA) -> INSTALLED_DATA
+            data.startsWith(INSTALLED_FILM_DATA) -> INSTALLED_FILM_DATA
+            else -> return null
+        }
+        val json = jsonValue(data.removePrefix(prefix)) as? JSONObject ?: return null
+        val page = json.optString("page").takeIf(String::isNotBlank) ?: return null
         val playback = json.optString("data").takeIf(String::isNotBlank) ?: return null
         return page to playback
     }
 
-    private suspend fun installedMovie(page: String): MovieLoadResponse? =
-        try {
-            withTimeoutOrNull(12_000) { findInstalledFilmProvider(page)?.load(page) as? MovieLoadResponse }
+    private fun encodePlayback(page: String, data: String): String =
+        INSTALLED_DATA + JSONObject().put("page", page).put("data", data).toString()
+
+    private suspend fun loadFromInstalled(source: WebCatalog, url: String): LoadResponse? {
+        return try {
+            when (val response = withTimeoutOrNull(10_000) { findInstalledProvider(source, url)?.load(url) }) {
+                is MovieLoadResponse -> response.takeIf { it.dataUrl.isNotBlank() }?.copy(
+                    apiName = name, url = url, dataUrl = encodePlayback(url, response.dataUrl),
+                )
+                is TvSeriesLoadResponse -> response.takeIf { it.episodes.any { episode -> episode.data.isNotBlank() } }?.copy(
+                    apiName = name, url = url,
+                    episodes = response.episodes.filter { it.data.isNotBlank() }.map { episode ->
+                        newEpisode(encodePlayback(url, episode.data), {
+                            name = episode.name
+                            season = episode.season
+                            this.episode = episode.episode
+                            posterUrl = episode.posterUrl
+                            description = episode.description
+                            date = episode.date
+                            runTime = episode.runTime
+                            score = episode.score
+                        }, fix = false)
+                    },
+                )
+                else -> null
+            }
         } catch (error: CancellationException) {
             throw error
         } catch (_: Exception) {
             null
         }
+    }
 
-    private fun filmCards(results: List<SearchResponse>): List<Card> = results
-        .filter { it.type == TvType.Movie && FilmCehennemi.handles(it.url) && findInstalledFilmProvider(it.url) != null }
-        .map { Card(it.name, it.url, it.posterUrl) }
+    private fun providerCards(source: WebCatalog, results: List<SearchResponse>): List<Card> = results
+        .filter { it.type == contentType && findInstalledProvider(source, it.url) != null }
+        .mapNotNull(source::cardFromProvider)
         .distinctBy(Card::url)
 
     private suspend fun searchSource(source: WebCatalog, term: String): List<Card> {
-        if (source === FilmCehennemi) {
-            val installed = findInstalledFilmProvider(source.firstPage)
-            if (installed != null) {
-                try {
-                    val cards = filmCards(withTimeoutOrNull(12_000) { installed.search(term) }.orEmpty())
-                    if (cards.isNotEmpty()) return cards
-                } catch (error: CancellationException) {
-                    throw error
-                } catch (_: Exception) {
-                    // The local catalog is still available as a fallback.
-                }
+        val installed = findInstalledProvider(source, source.firstPage)
+        if (installed != null) {
+            try {
+                val cards = providerCards(source, withTimeoutOrNull(8_000) { installed.search(term) }.orEmpty())
+                if (cards.isNotEmpty()) return cards
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                // The local catalog is still available as a fallback.
             }
         }
         return source.search(term)
     }
 
-    private suspend fun installedFilmPage(source: FilmCehennemi, page: Int, request: MainPageRequest): HomePageResponse? {
-        val installed = findInstalledFilmProvider(source.firstPage) ?: return null
-        val row = installed.mainPage.firstOrNull { it.data.endsWith("/home/") }
+    private suspend fun installedPage(source: WebCatalog, page: Int, request: MainPageRequest): HomePageResponse? {
+        if (source is BroadcasterCatalog) return null
+        val installed = findInstalledProvider(source, source.firstPage) ?: return null
+        val row = installed.mainPage.firstOrNull { it.data.trimEnd('/').endsWith("/home") }
             ?: installed.mainPage.firstOrNull() ?: return null
         return try {
-            val response = withTimeoutOrNull(12_000) {
+            val response = withTimeoutOrNull(10_000) {
                 installed.getMainPage(page, MainPageRequest(row.name, row.data, row.horizontalImages))
             } ?: return null
-            val cards = filmCards(response.items.flatMap { it.list })
+            val cards = providerCards(source, response.items.flatMap { it.list })
             if (cards.isEmpty()) return null
             newHomePageResponse(request.name, cards.map { item(it, source) }, response.hasNext)
         } catch (error: CancellationException) {

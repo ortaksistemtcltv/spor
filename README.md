@@ -23,7 +23,7 @@ Film ve dizi içerikleri CloudStream oynatıcısında açılır. Kaynağın sund
 
 DMAX Program Arşivi ve TLC Program Arşivi satırları, programları ve canlı yayın kartlarıyla Film/Dizi bölümünde yer alır. Yayıncının herkese açık medya bilgisi döndürmesi gerekir.
 
-HDFilmCehennemi oynatma sayfasındaki alternatif video seçenekleri çözülür. Cihazda desteklenen HDFilmCehennemi adreslerinden birini kullanan eklenti kuruluysa SEYİRBOX katalog, detay ve oynatma için o eklentinin verilerini kullanır. Oynatma verisi sağlayıcının ürettiği biçimde korunur.
+SEYİRBOX, cihazda kurulu olan ve ilgili kaynakla eşleşen film veya dizi eklentisini katalog, detay ve oynatma için kullanabilir. Film ve bölüm kimlikleri, sağlayıcının ürettiği biçimde korunur. Kurulu eklenti bulunamazsa SEYİRBOX kaynağın herkese açık sayfasını kontrol eder. Jetfilmizle’nin katalog sayfası ile oynatıcı seçeneklerini sağlayan isteğin erişim durumu farklı olabilir.
 
 Yeni kaynaklar [Ripplay](https://github.com/Ripplay/cloudstream-repo), [Nikyokki](https://github.com/nikyokki/nik-cloudstream) ve [TurkSinema](https://github.com/Wiojelt/TurkSinema) depolarındaki kataloglardan seçildi. SEYİRBOX, her kaynağın herkese açık HTML sayfalarını kendi ayrıştırıcısıyla okur.
 

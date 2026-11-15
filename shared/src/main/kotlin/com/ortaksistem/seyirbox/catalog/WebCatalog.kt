@@ -1,5 +1,7 @@
 package com.ortaksistem.seyirbox.catalog
 
+import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.SearchResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -59,6 +61,8 @@ internal abstract class WebCatalog(val label: String, val home: String) {
 
     open suspend fun fetchAlternativePlayer(url: String, referer: String): Document? = null
 
+    open suspend fun extraPlayerDocuments(document: Document): List<Document> = emptyList()
+
     open fun isDetailUrl(url: String): Boolean = handles(url) &&
         httpsUri(url)?.path?.trim('/')?.isNotBlank() == true
 
@@ -68,6 +72,12 @@ internal abstract class WebCatalog(val label: String, val home: String) {
     }
 
     open fun handles(url: String): Boolean = supports(url)
+
+    open fun matchesInstalledProvider(api: MainAPI): Boolean =
+        searchText(label) == searchText(api.name) && supports(api.mainUrl)
+
+    open fun cardFromProvider(result: SearchResponse): Card? =
+        Card(result.name, result.url, result.posterUrl).takeIf { handles(it.url) && it.title.isNotBlank() }
 
     fun nextPage(document: Document): String? {
         val current = document.location().substringBefore('#')
@@ -81,16 +91,18 @@ internal abstract class WebCatalog(val label: String, val home: String) {
 
     protected data class Page(val url: String, val body: String)
 
-    protected suspend fun read(url: String, searchRequest: Boolean = false, referer: String? = null): Page? = withContext(Dispatchers.IO) {
+    protected suspend fun read(
+        url: String, searchRequest: Boolean = false, referer: String? = null, form: Map<String, String>? = null,
+    ): Page? = withContext(Dispatchers.IO) {
         if (!supports(url)) return@withContext null
         try {
-            fetchPage(url, searchRequest, referer)
+            fetchPage(url, searchRequest, referer, form)
         } catch (_: IOException) {
             null
         }
     }
 
-    private fun fetchPage(url: String, searchRequest: Boolean, referer: String?): Page? {
+    private fun fetchPage(url: String, searchRequest: Boolean, referer: String?, form: Map<String, String>?): Page? {
         var address = URI(url)
         repeat(4) {
             val connection = address.toURL().openConnection() as HttpURLConnection
@@ -99,7 +111,16 @@ internal abstract class WebCatalog(val label: String, val home: String) {
                 connection.connectTimeout = 8_000
                 connection.readTimeout = 8_000
                 if (referer != null && supports(referer)) connection.setRequestProperty("Referer", referer)
-                if (searchRequest) {
+                if (form != null) {
+                    val body = form.entries.joinToString("&") { (name, value) -> "${encode(name)}=${encode(value)}" }
+                        .toByteArray(Charsets.UTF_8)
+                    connection.requestMethod = "POST"
+                    connection.doOutput = true
+                    connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+                    connection.setRequestProperty("X-Requested-With", "XMLHttpRequest")
+                    connection.setFixedLengthStreamingMode(body.size)
+                    connection.outputStream.use { it.write(body) }
+                } else if (searchRequest) {
                     connection.setRequestProperty("Accept", "application/json,text/html")
                     connection.setRequestProperty("X-Requested-With", "fetch")
                 } else {
@@ -107,6 +128,7 @@ internal abstract class WebCatalog(val label: String, val home: String) {
                 }
                 val status = connection.responseCode
                 if (status in setOf(301, 302, 303, 307, 308)) {
+                    if (form != null) return null
                     val location = connection.getHeaderField("Location") ?: return null
                     val redirected = runCatching { address.resolve(location) }.getOrNull() ?: return null
                     if (!supports(redirected.toString())) return null
