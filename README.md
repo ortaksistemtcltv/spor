@@ -14,3 +14,7 @@ https://raw.githubusercontent.com/ortaksistemtcltv/spor/main/repo.json
 [Depo manifesti](./repo.json) · [Eklenti dizini](https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/plugins.json)
 
 Kaynaklar `main` dalında, derlenen eklenti `builds` dalındadır. Kanal verileri `data/channels.json` dosyasındadır. Yayın erişimi hizmet sağlayıcısına göre değişebilir.
+
+## SPOR 5 · Patron İzle
+
+[Patron İzle 7/24 kanal kataloğu](data/spor5-patronizle-kanallar.json) 39 kayıt ve 36 benzersiz kanal sayfası içerir. JSON içindeki `channelPage` alanı web oynatıcısının adresidir. SPOR 5 grubunun CloudStream'de oynatılabilmesi için doğrudan yayın akışları gerekir.
