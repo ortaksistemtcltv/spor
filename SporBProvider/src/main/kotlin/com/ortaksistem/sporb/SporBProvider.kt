@@ -16,18 +16,27 @@ import java.text.Normalizer
 import java.util.Locale
 
 class SporBProvider : MainAPI() {
-    override var name = "OSPlayer SporB"
+    override var name = "SPOR KANALI"
     override var mainUrl = "https://github.com/" + SporBCatalogue.repository
     override var lang = "tr"
     override val supportedTypes = setOf(TvType.Live)
     override val hasMainPage = true
     override val mainPage = mainPageOf(
         "resmi" to "Yayıncı Kaynakları",
-        "Tvjustin" to "Tvjustin",
-        "Trgoals" to "Trgoals",
-        "DoğuSpor" to "DoğuSpor",
-        "Vavoo Turkey" to "Vavoo Turkey",
+        "Tvjustin" to "SPOR 1",
+        "Trgoals" to "SPOR 2",
+        "DoğuSpor" to "SPOR 3",
+        "Vavoo Turkey" to "SPOR 4",
     )
+
+    private val displaySourceNames = mapOf(
+        "Tvjustin" to "SPOR 1",
+        "Trgoals" to "SPOR 2",
+        "DoğuSpor" to "SPOR 3",
+        "Vavoo Turkey" to "SPOR 4",
+    )
+
+    private fun sourceLabel(source: String): String = displaySourceNames[source] ?: source
 
     private val locale = Locale.forLanguageTag("tr-TR")
     private val channels = SporBCatalogue.channels
@@ -81,7 +90,7 @@ class SporBProvider : MainAPI() {
 
         return matchingChannels.distinctBy { it.id }.flatMap { match ->
             listOfNotNull(
-                Stream(match.source, match.url, match.headers),
+                Stream(sourceLabel(match.source), match.url, match.headers),
                 officialBackups[match.id]?.let { Stream("${match.source} · Yedek", it, emptyMap()) },
             )
         }.distinctBy { it.url }
@@ -107,14 +116,14 @@ class SporBProvider : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val term = query.trim().lowercase(locale)
         return allChannels.filter { row ->
-            listOf(row.name, row.group, row.source).any { it.lowercase(locale).contains(term) }
+            listOf(row.name, row.group, row.source, sourceLabel(row.source)).any { it.lowercase(locale).contains(term) }
         }.map(::card)
     }
 
     override suspend fun load(url: String) = findChannel(url)?.let { row ->
         newLiveStreamLoadResponse(row.name, itemUrl(row), itemUrl(row)) {
             val count = streamsFor(row).size
-            plot = "${row.group} · ${row.source}" +
+            plot = "${row.group} · ${sourceLabel(row.source)}" +
                 if (count > 1) "\n$count kaynak var. Yayın açılmazsa Kaynaklar menüsünden diğerini seç." else ""
         }
     }

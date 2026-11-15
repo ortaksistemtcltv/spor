@@ -17,9 +17,10 @@ if len(entries) != 1 or entries[0].get("url") != f"{base}/{plugin.name}":
 publish = root / "build/publish"
 publish.mkdir(parents=True, exist_ok=True)
 copyfile(plugin, publish / plugin.name)
-copyfile(plugins_json, publish / "plugins.json")
+entries[0]["name"] = "SPOR"
+(publish / "plugins.json").write_text(json.dumps(entries, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 manifest = {
-    "name": "OSPlayer SporB",
+    "name": "SPOR",
     "description": "Türkçe spor canlı yayın kataloğu",
     "manifestVersion": 1,
     "pluginLists": [f"{base}/plugins.json"],

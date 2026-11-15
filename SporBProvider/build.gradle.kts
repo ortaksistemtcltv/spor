@@ -1,8 +1,8 @@
-version = 5
+version = 6
 
 cloudstream {
-    description = "225 SporB kaydı ve yayıncı kaynakları"
-    authors = listOf("OSPlayer")
+    description = "Canlı spor kanalları ve yayıncı kaynakları"
+    authors = listOf("SPOR")
     language = "tr"
     status = 1
     tvTypes = listOf("Live")
