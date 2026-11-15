@@ -19,7 +19,7 @@ entries = json.loads((root / "build/plugins.json").read_text(encoding="utf-8"))
 if not isinstance(entries, list) or not entries:
     raise SystemExit("Yayımlanacak eklenti bulunamadı.")
 
-display_names = {"SporBProvider": "SPOR", "FilmProvider": "FİLM", "DiziProvider": "DİZİ"}
+display_names = {"SporBProvider": "SEYİRBOX", "FilmProvider": "FİLM", "DiziProvider": "DİZİ"}
 artifacts = {}
 for entry in entries:
     if not isinstance(entry, dict):

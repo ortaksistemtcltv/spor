@@ -1,4 +1,6 @@
 {
+  "providerName": "SEYİRBOX",
+  "pluginInternalName": "SporBProvider",
   "groups": [
     {
       "name": "FİLM",
@@ -29,8 +31,6 @@
     {
       "name": "SPOR",
       "tvType": "Live",
-      "pluginInternalName": "SporBProvider",
-      "providerName": "SPOR KANALI",
       "status": "published"
     }
   ]

@@ -1,39 +1,33 @@
 # SEYİRBOX · CloudStream
 
-Türkçe film, dizi ve spor eklentileri için CloudStream deposu. Şu anda SPOR eklentisi yayında.
+Türkçe film, dizi ve canlı spor sağlayıcısı.
 
-1. CloudStream’de **Ayarlar → Eklentiler → Depo Ekle** bölümünü aç.
-2. [Depo adresini](https://raw.githubusercontent.com/ortaksistemtcltv/spor/main/repo.json) ekle.
-3. **SPOR** eklentisini kur veya güncelle. Sağlayıcı adı **SPOR KANALI** olarak görünür.
-4. Önce **Yayıncı Kaynakları** bölümünden TRT Spor, TRT Spor Yıldız veya A Spor’u dene. Sol menüde **JUSTIN SPOR**, **TRGOALS**, **DOĞU SPOR** ve **VAVOO SPOR** bulunur. Bir adres hata verirse, varsa aynı kanalın diğer kaynağını oynatıcının kaynak menüsünden seç.
+1. CloudStream’de **Ayarlar → Eklentiler → Depo Ekle** bölümünü açın.
+2. [Ana depo adresini](https://raw.githubusercontent.com/ortaksistemtcltv/spor/main/repo.json) ekleyin.
+3. **SEYİRBOX** eklentisini kurun veya mevcut **SPOR** eklentisini güncelleyin.
+4. Ana ekranın sağlayıcı seçiminde **SEYİRBOX**’ı seçin.
 
 ```text
 https://raw.githubusercontent.com/ortaksistemtcltv/spor/main/repo.json
 ```
 
-[Depo manifesti](./repo.json) · [Eklenti dizini](https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/plugins.json)
+| Ana ekran bölümü | Kaynaklar |
+| --- | --- |
+| FİLM | HDFİLMCEHENNEMİ |
+| DİZİ | DİZİBOX |
+| SPOR | Yayıncı Kaynakları, JUSTIN SPOR, TRGOALS, DOĞU SPOR, VAVOO SPOR |
 
-Kaynaklar `main` dalında, derlenen eklenti `builds` dalındadır. Kanal verileri `data/channels.json` dosyasındadır. Yayın erişimi hizmet sağlayıcısına göre değişebilir.
+HDFİLMCEHENNEMİ ve DİZİBOX katalogları sitelerden yüklenir. Katalog erişimi ve oynatma, sitelerin cihazınıza döndürdüğü yanıta bağlıdır. FİLM ve DİZİ doğrudan HTTPS HLS, DASH, MP4 ve WebM bağlantılarını oynatıcıya gönderir. Bir kaynak yalnızca web oynatıcı sayfası veriyorsa o adres medya akışı olarak sunulmaz.
 
-## Eklentiler ve kaynaklar
+[Kaynak kayıtları](data/seyirbox-sources.json) · [Eklenti dizini](https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/plugins.json)
 
-| Eklenti | Kaynak grupları | Durum |
-| --- | --- | --- |
-| FİLM | HDFİLMCEHENNEMİ, ardından eklenen film siteleri | Önizleme derlemesi. İlk sitenin canlı erişimi doğrulanmayı bekliyor. |
-| DİZİ | DİZİBOX, ardından eklenen dizi siteleri | Önizleme derlemesi. İlk sitenin canlı erişimi doğrulanmayı bekliyor. |
-| SPOR | Yayıncı Kaynakları, JUSTIN SPOR, TRGOALS, DOĞU SPOR, VAVOO SPOR | CloudStream’de SPOR KANALI olarak yayında. |
-
-[Kaynak kayıtları](data/seyirbox-sources.json) site sırasını gösterir. Film ve dizi adaptörlerinin çalışma sırası ilgili eklentinin Kotlin kaynak listesinden gelir. Yeni bir kaynak eklemek için ortak `WebCatalog` sınıfını uygulayıp ilgili eklentinin bu listesine ekleyin.
-
-Önizleme modüllerini yerel olarak derlemek için `bash gradlew -PpreviewCatalogs=true make makePluginsJson` komutunu çalıştırın. FİLM ve DİZİ’nin canlı site kontrolleri tamamlandığında yayın derlemesine alınabilir. Kurulabilir sürümler `builds/plugins.json` dosyasında listelenir.
-
-FİLM ve DİZİ doğrudan HTTPS HLS, DASH, MP4 ve WebM bağlantılarını oynatıcıya gönderir. Site arayüzü ve açılır pencereler CloudStream’de render edilmez. Yayın akışının içindeki reklamlar oynatma adresinin parçası olabilir. Site bir web oynatıcı sayfası sunuyorsa ve HTML’de doğrudan medya yoksa üçüncü taraf çerçeve adresi video olarak gösterilmez.
+Ana yayın derlemesi tek **SEYİRBOX** eklentisini üretir. `-PpreviewCatalogs=true` yerel seçenek olarak FİLM ve DİZİ’yi ayrıca derler. Bu ayrı paketler önizleme deposunu daha önce kurmuş cihazlarda listelenebilir.
 
 ## PATRON SPOR
 
 [Patron İzle 7/24 kanal kataloğu](data/spor5-patronizle-kanallar.json) 39 kayıt ve 36 benzersiz kanal sayfası içerir. SeyirBox gibi bir istemci, `channelPage` adresini web oynatıcısında veya varsayılan tarayıcıda hemen açabilir. `playback.startupWaitSeconds` sayfa yüklendikten sonra gösterilebilecek 5 saniyelik tahmini bekleme süresidir. Reklamın bitişini ve oynatmayı site yönetir. Gerekirse sayfadaki **Oynat** düğmesine basın.
 
-CloudStream’in yerleşik oynatıcısı doğrudan medya akışı beklediği için bu web sayfaları **SPOR KANALI** oynatma listesine eklenmez.
+CloudStream’in yerleşik oynatıcısı doğrudan medya akışı beklediği için bu web sayfaları SEYİRBOX **SPOR** oynatma listesine eklenmez.
 
 [Patron Futbol 7/24 kanal kataloğu](data/patronfutbol-kanallar.json) **PATRON SPOR** için ikinci web adresini kaydeder. Sitenin 7/24 sekmesindeki 39 kanal etiketi 36 benzersiz oynatıcı sayfasına gider. Oynatıcı yolları Patron İzle kataloğundakilerle eşleşir. Her katalog kendi alan adını kullanır.
 

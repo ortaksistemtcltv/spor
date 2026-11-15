@@ -1,33 +1,57 @@
 package com.ortaksistem.sporb
 
+import com.lagradost.cloudstream3.HomePageResponse
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MainPageData
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.TvType
-import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.mainPage
 import com.lagradost.cloudstream3.newHomePageResponse
 import com.lagradost.cloudstream3.newLiveSearchResponse
 import com.lagradost.cloudstream3.newLiveStreamLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.ortaksistem.seyirbox.catalog.CatalogProvider
+import com.ortaksistem.seyirbox.catalog.DiziBox
+import com.ortaksistem.seyirbox.catalog.FilmCehennemi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import java.text.Normalizer
 import java.util.Locale
 
 class SporBProvider : MainAPI() {
-    override var name = "SPOR KANALI"
+    override var name = "SEYİRBOX"
     override var mainUrl = "https://github.com/" + SporBCatalogue.repository
     override var lang = "tr"
-    override val supportedTypes = setOf(TvType.Live)
+    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Live)
     override val hasMainPage = true
-    override val mainPage = mainPageOf(
-        "resmi" to "Yayıncı Kaynakları",
-        "Tvjustin" to "JUSTIN SPOR",
-        "Trgoals" to "TRGOALS",
-        "DoğuSpor" to "DOĞU SPOR",
-        "Vavoo Turkey" to "VAVOO SPOR",
+
+    private val film = CatalogProvider(name, TvType.Movie, listOf(FilmCehennemi))
+    private val dizi = CatalogProvider(name, TvType.TvSeries, listOf(DiziBox))
+    private val webPages: List<Pair<MainPageData, CatalogProvider>> = listOf("FİLM" to film, "DİZİ" to dizi).flatMap { (section, provider) ->
+        provider.mainPage.map { page ->
+            mainPage(page.data, "$section · ${page.name}", page.horizontalImages) to provider
+        }
+    }
+    private val webPageProviders = webPages.associate { (page, provider) -> page.data to provider }
+
+    override val mainPage: List<MainPageData> = webPages.map { it.first } + listOf(
+        mainPage("resmi", "SPOR · Yayıncı Kaynakları"),
+        mainPage("Tvjustin", "SPOR · JUSTIN SPOR"),
+        mainPage("Trgoals", "SPOR · TRGOALS"),
+        mainPage("DoğuSpor", "SPOR · DOĞU SPOR"),
+        mainPage("Vavoo Turkey", "SPOR · VAVOO SPOR"),
     )
+
+    private fun webProvider(url: String): CatalogProvider? = when {
+        FilmCehennemi.supports(url) -> film
+        DiziBox.supports(url) -> dizi
+        else -> null
+    }
 
     private val displaySourceNames = mapOf(
         "Tvjustin" to "JUSTIN SPOR",
@@ -105,16 +129,21 @@ class SporBProvider : MainAPI() {
     private val byId = allChannels.associateBy { it.id }
 
     private fun findChannel(value: String): SportsChannel? {
-        val key = value.trim().substringBefore('?').substringBefore('#').trimEnd('/')
-            .substringAfterLast('/').toIntOrNull() ?: return null
-        return byId[key]
+        val url = value.trim().substringBefore('?').substringBefore('#').trimEnd('/')
+        val prefix = "$mainUrl/sporb/"
+        if (!url.startsWith(prefix)) return null
+        val id = url.removePrefix(prefix).toIntOrNull() ?: return null
+        return byId[id]
     }
     private fun itemUrl(channel: SportsChannel) = "$mainUrl/sporb/${channel.id}"
     private fun card(channel: SportsChannel) =
         newLiveSearchResponse(channel.name, itemUrl(channel), TvType.Live, fix = false)
 
-    override suspend fun getMainPage(page: Int, request: MainPageRequest) =
-        newHomePageResponse(request.name, channelsForGroup(request.data).map(::card), hasNext = false)
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        webPageProviders[request.data]?.let { return it.getMainPage(page, request) }
+        val items = if (page == 1) channelsForGroup(request.data).map(::card) else emptyList()
+        return newHomePageResponse(request.name, items, hasNext = false)
+    }
 
     private fun channelsForGroup(source: String): List<SportsChannel> =
         when (source) {
@@ -122,15 +151,21 @@ class SporBProvider : MainAPI() {
             else -> channels.filter { it.source == source }
         }
 
-    override suspend fun search(query: String): List<SearchResponse> {
+    override suspend fun search(query: String): List<SearchResponse> = coroutineScope {
         val term = query.trim().lowercase(locale)
-        return allChannels.filter { row ->
+        if (term.isEmpty()) return@coroutineScope emptyList()
+        val filmResults = async { film.search(query) }
+        val diziResults = async { dizi.search(query) }
+        val sports = allChannels.filter { row ->
             listOf(row.name, row.group, row.source, sourceLabel(row.source)).any { it.lowercase(locale).contains(term) }
         }.map(::card)
+        filmResults.await() + diziResults.await() + sports
     }
 
-    override suspend fun load(url: String) = findChannel(url)?.let { row ->
-        newLiveStreamLoadResponse(row.name, itemUrl(row), itemUrl(row)) {
+    override suspend fun load(url: String): LoadResponse? {
+        webProvider(url)?.let { return it.load(url) }
+        val row = findChannel(url) ?: return null
+        return newLiveStreamLoadResponse(row.name, itemUrl(row), itemUrl(row)) {
             val count = streamsFor(row).size
             plot = "${row.group} · ${sourceLabel(row.source)}" +
                 if (count > 1) "\n$count kaynak var. Yayın açılmazsa Kaynaklar menüsünden diğerini seç." else ""
@@ -143,6 +178,7 @@ class SporBProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
+        webProvider(data)?.let { return it.loadLinks(data, isCasting, subtitleCallback, callback) }
         val row = findChannel(data) ?: return false
         val streams = streamsFor(row)
         streams.forEach { stream ->

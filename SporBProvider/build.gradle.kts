@@ -1,9 +1,9 @@
-version = 10
+version = 11
 
 cloudstream {
-    description = "Canlı spor kanalları ve yayıncı kaynakları"
-    authors = listOf("SPOR")
+    description = "Film, dizi ve canlı spor kaynakları"
+    authors = listOf("SEYİRBOX")
     language = "tr"
     status = 1
-    tvTypes = listOf("Live")
+    tvTypes = listOf("Movie", "TvSeries", "Live")
 }
