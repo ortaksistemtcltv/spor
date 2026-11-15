@@ -16,19 +16,22 @@ import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import org.jsoup.nodes.Document
+import java.net.URI
+import java.util.Locale
 
 internal class CatalogProvider(
     displayName: String,
     private val contentType: TvType,
     private val sources: List<WebCatalog>,
+    private val pageLoader: suspend (WebCatalog, String) -> Document? = { source, url -> source.fetch(url) },
+    private val openInBrowser: suspend (String, String) -> Boolean = { title, url -> BrowserPlayback.open(title, url) },
 ) : MainAPI() {
     override var name = displayName
     override var mainUrl = sources.first().home
@@ -37,6 +40,7 @@ internal class CatalogProvider(
     override val hasMainPage = true
     private companion object {
         val searchRequests = Semaphore(6)
+        const val BROWSER_DATA = "seyirbox-web:"
     }
 
     override val mainPage = mainPageOf(*sources.map { it.firstPage to it.label }.toTypedArray())
@@ -70,28 +74,35 @@ internal class CatalogProvider(
         }
     }
 
-    fun handles(url: String): Boolean = sources.any { it.handles(url) }
+    fun handles(url: String): Boolean = sources.any { it.handles(url.removePrefix(BROWSER_DATA)) }
 
     override suspend fun load(url: String): LoadResponse? {
         val source = sources.firstOrNull { it.handles(url) } ?: return null
-        val document = source.fetch(url) ?: return null
-        val detail = source.detail(document) ?: return null
+        val document = pageLoader(source, url)
+        val detail = document?.let { source.detail(it) }
+        if (detail == null) {
+            if (!source.isDetailUrl(url)) return null
+            return browserPage(source, url, null)
+        }
         if (contentType == TvType.Movie) {
+            val streams = mediaFor(source, document)
+            if (streams.isEmpty()) return browserPage(source, url, detail, source.browserPlaybackPage(document))
             return newMovieLoadResponse(detail.title, url, contentType, url) {
                 posterUrl = detail.poster
                 plot = detail.plot
             }
         }
+        if (detail.chapters.isEmpty()) return browserPage(source, url, detail)
         val episodes = detail.chapters.map { chapter ->
-            newEpisode(chapter.url, {
+            newEpisode(browserData(chapter.url), {
                 name = chapter.title
                 season = chapter.season
                 episode = chapter.number
             }, fix = false)
         }
-        return newTvSeriesLoadResponse(detail.title, url, contentType, episodes) {
+        return newTvSeriesLoadResponse(detail.title, url, TvType.CustomMedia, episodes) {
             posterUrl = detail.poster
-            plot = detail.plot
+            plot = listOfNotNull(detail.plot, "Bölümler kaynak sitesinde tarayıcıyla açılır.").joinToString("\n\n")
         }
     }
 
@@ -101,9 +112,12 @@ internal class CatalogProvider(
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
-        val source = sources.firstOrNull { it.handles(data) } ?: return false
-        val document = source.fetch(data) ?: return false
-        val streams = publicMedia(document)
+        val page = data.removePrefix(BROWSER_DATA)
+        val source = sources.firstOrNull { it.handles(page) } ?: return false
+        if (page != data) return !isCasting && openInBrowser(source.label, page)
+
+        val document = pageLoader(source, page) ?: return false
+        val streams = mediaFor(source, document)
         streams.forEach { stream ->
             val type = when (stream.format) {
                 MediaFormat.HLS -> ExtractorLinkType.M3U8
@@ -111,23 +125,37 @@ internal class CatalogProvider(
                 MediaFormat.VIDEO -> ExtractorLinkType.VIDEO
             }
             callback(newExtractorLink(name, source.label, stream.url, type) {
-                referer = document.location()
+                referer = stream.referer ?: document.location()
+                stream.resolution?.let { quality = it }
             })
         }
-        val seen = streams.mapTo(mutableSetOf()) { it.url }
-        for (url in source.publicEmbeds(document)) {
-            try {
-                loadExtractor(url, document.location(), subtitleCallback) { link ->
-                    if (seen.add(link.url)) callback(link)
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                // Another player or a direct source may still be available.
-            }
-        }
-        return seen.isNotEmpty()
+        return streams.isNotEmpty()
     }
+
+    private suspend fun mediaFor(source: WebCatalog, document: Document): List<Media> =
+        (publicMedia(document) + source.embeddedMedia(document)).distinctBy(Media::url)
+
+    private suspend fun browserPage(
+        source: WebCatalog,
+        url: String,
+        detail: Detail?,
+        playbackPage: String = url,
+    ): LoadResponse {
+        val title = detail?.title ?: URI(url).path.trimEnd('/').substringAfterLast('/')
+            .replace('-', ' ').replaceFirstChar { it.titlecase(Locale.forLanguageTag("tr-TR")) }
+            .ifBlank { source.label }
+        return newMovieLoadResponse(title, url, TvType.CustomMedia, browserData(playbackPage)) {
+            posterUrl = detail?.poster
+            val message = if (detail == null) {
+                "Kaynak sayfası uygulama içinden okunamadı. Oynat, sayfayı tarayıcıda açar."
+            } else {
+                "Oynat, içeriği kaynak sitesinin oynatıcısında açar."
+            }
+            plot = listOfNotNull(detail?.plot, message).joinToString("\n\n")
+        }
+    }
+
+    private fun browserData(url: String): String = BROWSER_DATA + url
 
     private fun item(card: Card): SearchResponse =
         if (contentType == TvType.Movie) {

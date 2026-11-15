@@ -10,8 +10,9 @@ import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URI
 
-internal object FilmCehennemi : WebCatalog("HDFİLMCEHENNEMİ", "https://www.hdfilmcehennemi.nl/") {
+internal object FilmCehennemi : WebCatalog("HDFilmCehennemi", "https://www.hdfilmcehennemi.nl/") {
     override val firstPage = home + "category/film-izle-2/"
     override fun searchPage(query: String): String = home + "search?q=" + encode(query)
 
@@ -54,7 +55,7 @@ internal object FilmCehennemi : WebCatalog("HDFİLMCEHENNEMİ", "https://www.hdf
     }
 }
 
-internal object DiziBox : WebCatalog("DİZİBOX", "https://www.dizibox.live/") {
+internal object DiziBox : WebCatalog("Dizibox", "https://www.dizibox.live/") {
     override val firstPage = home + "dizi-arsivi/"
     override fun searchPage(query: String): String = home + "?s=" + encode(query)
     private val seasonFromUrl = Regex("""(?:^|[/_-])(\d+)-sezon(?:[/_-]|$)""")
@@ -62,6 +63,9 @@ internal object DiziBox : WebCatalog("DİZİBOX", "https://www.dizibox.live/") {
     private val seasonFromTitle = Regex("""(\d+)\s*\.?\s*sezon""", RegexOption.IGNORE_CASE)
     private val episodeFromTitle = Regex("""(\d+)\s*\.?\s*bölüm""", RegexOption.IGNORE_CASE)
     private val seasonRequests = Semaphore(4)
+
+    override fun isDetailUrl(url: String): Boolean =
+        handles(url) && URI(url).path.orEmpty().startsWith("/diziler/")
 
     override suspend fun search(query: String): List<Card> =
         super.search(query).ifEmpty { searchFirstPage(query) }

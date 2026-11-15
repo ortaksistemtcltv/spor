@@ -23,7 +23,12 @@ internal data class Detail(
     val chapters: List<Chapter> = emptyList(),
 )
 internal enum class MediaFormat { HLS, DASH, VIDEO }
-internal data class Media(val url: String, val format: MediaFormat)
+internal data class Media(
+    val url: String,
+    val format: MediaFormat,
+    val referer: String? = null,
+    val resolution: Int? = null,
+)
 
 internal abstract class WebCatalog(val label: String, val home: String) {
     private val hosts = setOf(URI(home).host, URI(home).host.removePrefix("www."))
@@ -42,7 +47,12 @@ internal abstract class WebCatalog(val label: String, val home: String) {
 
     abstract suspend fun detail(document: Document): Detail?
 
-    open fun publicEmbeds(document: Document): List<String> = emptyList()
+    open suspend fun embeddedMedia(document: Document): List<Media> = emptyList()
+
+    open fun browserPlaybackPage(document: Document): String = document.location()
+
+    open fun isDetailUrl(url: String): Boolean = handles(url) &&
+        httpsUri(url)?.path?.trim('/')?.isNotBlank() == true
 
     fun supports(url: String): Boolean {
         val uri = httpsUri(url) ?: return false
@@ -151,7 +161,7 @@ internal fun publicMedia(document: Document): List<Media> =
             )
         }.distinctBy(Media::url)
 
-private fun mediaAt(url: String, mime: String): Media? {
+internal fun mediaAt(url: String, mime: String): Media? {
     val uri = httpsUri(url) ?: return null
     val path = uri.path.orEmpty().lowercase(Locale.ROOT)
     val format = when {

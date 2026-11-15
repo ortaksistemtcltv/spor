@@ -11,6 +11,7 @@ internal object ChannelArtwork {
         "smart spor" to "spor-smart",
         "trt spor" to "trt-spor",
         "trt spor yildiz" to "trt-spor-yildiz",
+        "trt spor 2" to "trt-spor-yildiz",
         "trt 1" to "trt-1",
         "trt 3" to "trt-3",
         "a spor" to "a-spor",
@@ -32,6 +33,11 @@ internal object ChannelArtwork {
 
     internal fun artworkId(channelKey: String): String {
         val key = channelKey.replace(feedSuffix, "").trim()
+            .replace(Regex("^tabi spor"), "tabii spor")
+            .replace(Regex("^exxen ([1-4])$"), "exxen sports $1")
+            .replace(Regex("^s sport plus ([1-5])$"), "s sport+$1")
+        if (key in setOf("exxen", "exxen tv", "exxen sports")) return "exxen-spor-1"
+        if (key == "smart spor 1") return "spor-smart"
         if (key.startsWith("bein sports 4k feed")) return "bein-sports-4k"
         sportPlus.matchEntire(key)?.let { return "s-sport-plus-${it.groupValues[1]}" }
         numberedChannel.matchEntire(key)?.let { match ->
@@ -41,7 +47,17 @@ internal object ChannelArtwork {
                 "s sports" -> "s-sport"
                 else -> families.getValue(family)
             }
-            return if (slug == "s-sport" && number == "1") slug else "$slug-$number"
+            val maxNumber = when (slug) {
+                "bein-sports" -> 5
+                "exxen-spor", "tivibu-spor" -> 4
+                "tabii-spor" -> 6
+                else -> 2
+            }
+            return when {
+                number.toInt() > maxNumber -> "canli-spor"
+                slug == "s-sport" && number == "1" -> slug
+                else -> "$slug-$number"
+            }
         }
         return families[key] ?: "canli-spor"
     }

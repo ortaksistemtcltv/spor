@@ -12,21 +12,30 @@ import java.util.Locale
 internal val filmCatalogs: List<WebCatalog> = listOf(
     FilmCehennemi,
     DiziFilmIzle(series = false),
-    HtmlCatalog("JETFİLMİZLE", "https://jetfilmizle.app/", "filmler", "a[href]:has(.fc-title)", filmPath, ".fc-title", searchPath = "arama?q="),
-    HtmlCatalog("SİNEMAGG", "https://sinemacc.com/", "film-arsivi/", ".film_kutusu > a[href]:has(img)", filmPath, ".title .text"),
-    HtmlCatalog("WEBTEİZLE", "https://webteizle.info/", "film-izle/", "div.golgever a.image[href]", Regex("/hakkinda/[^/]+/?"), responseCharset = "windows-1254"),
+    HtmlCatalog("Jetfilmizle", "https://jetfilmizle.app/", "filmler", "a[href]:has(.fc-title)", filmPath, ".fc-title", searchPath = "arama?q="),
+    HtmlCatalog("SinemaGG", "https://sinemacc.com/", "film-arsivi/", ".film_kutusu > a[href]:has(img)", filmPath, ".title .text"),
+    WebteIzle,
     RareFilmm,
 )
 
 internal val seriesCatalogs: List<WebCatalog> = listOf(
     DiziBox,
     DiziFilmIzle(series = true),
-    HtmlCatalog("DİZİRELLA", "https://dizirella.one/", "dizi-arsivi/", "a.r-card[href], .single-item .categorytitle a[href]", Regex("/dizi/[^/]+/?"), ".r-cap-t", posterContainer = ".single-item", searchPath = "?s=", episodePath = { path ->
+    HtmlCatalog("Dizirella", "https://dizirella.one/", "dizi-arsivi/", "a.r-card[href], .single-item .categorytitle a[href]", Regex("/dizi/[^/]+/?"), ".r-cap-t", posterContainer = ".single-item", searchPath = "?s=", episodePath = { path ->
         Regex("""/${Regex.escape(path.substringAfterLast('/'))}-(\d+)-sezon-(\d+)-bolum/?""")
     }),
     broadcaster("DMAX", "https://www.dmax.com.tr/"),
     broadcaster("TLC", "https://www.tlctv.com.tr/"),
 )
+
+private object WebteIzle : HtmlCatalog(
+    "Webteİzle", "https://webteizle.info/", "film-izle/", "div.golgever a.image[href]",
+    Regex("/hakkinda/[^/]+/?"), responseCharset = "windows-1254",
+) {
+    override fun browserPlaybackPage(document: Document): String =
+        document.select("a[href^=/izle/altyazi/], a[href^=/izle/dublaj/]").asSequence()
+            .map { it.absUrl("href") }.firstOrNull(::supports) ?: document.location()
+}
 
 private val filmPath get() = Regex("/film/[^/]+/?")
 
@@ -47,9 +56,10 @@ private open class HtmlCatalog(
     override val responseCharset: String = "UTF-8",
     private val episodePath: ((String) -> Regex)? = null,
     private val usePathTitle: Boolean = false,
-    private val playbackNote: String = "Kaynak kataloğu. CloudStream oynatma, sayfada sunulan medya bağlantılarına bağlıdır.",
 ) : WebCatalog(label, home) {
     override val firstPage = home + archive
+
+    override fun isDetailUrl(url: String): Boolean = handles(url) && cardPath.matches(URI(url).path.orEmpty())
 
     override fun searchPage(query: String): String {
         val path = searchPath ?: return firstPage
@@ -92,7 +102,7 @@ private open class HtmlCatalog(
         val description = document.meta("name", "description") ?: document.meta("property", "og:description")
         val chapterPattern = episodePath?.invoke(path)
         val chapters = if (chapterPattern == null) emptyList() else chaptersOn(document, chapterPattern)
-        return Detail(title, poster, listOfNotNull(description, playbackNote).joinToString("\n\n"), chapters)
+        return Detail(title, poster, description, chapters)
     }
 
     protected open fun episodeUrls(document: Document): Sequence<String> =
@@ -122,7 +132,7 @@ private open class HtmlCatalog(
 }
 
 private class DiziFilmIzle(private val series: Boolean) : HtmlCatalog(
-    "DİZİFİLMİZLE",
+    "DiziFilmizle",
     "https://dizifilmizle.to/",
     if (series) "yabanci-dizi-izle" else "",
     "a.media-card__link[href]",
@@ -163,7 +173,7 @@ private class DiziFilmIzle(private val series: Boolean) : HtmlCatalog(
 }
 
 private object RareFilmm : HtmlCatalog(
-    "RAREFILMM",
+    "RareFilmm",
     "https://rarefilmm.com/",
     "",
     ".excerpt-title a[href]",
@@ -171,9 +181,8 @@ private object RareFilmm : HtmlCatalog(
     ".entry-title-primary",
     posterContainer = ".post",
     searchPath = "?s=",
-    playbackNote = "Kaynak sayfasındaki desteklenen video bağlantıları kullanılır.",
 ) {
-    override fun publicEmbeds(document: Document): List<String> =
+    private fun publicEmbeds(document: Document): List<String> =
         document.select(".entry-content iframe[src]").mapNotNull { element ->
             val url = element.absUrl("src")
             if (!isHttpsUrl(url)) return@mapNotNull null
@@ -182,4 +191,53 @@ private object RareFilmm : HtmlCatalog(
             if (!Regex("/videoembed/[0-9]+/?").matches(uri.path.orEmpty())) return@mapNotNull null
             "https://ok.ru" + uri.path.trimEnd('/')
         }.distinct()
+
+    override suspend fun embeddedMedia(document: Document): List<Media> =
+        publicEmbeds(document).flatMap { url ->
+            OkPublicPlayer.fetch(url)?.let(OkPublicPlayer::streams).orEmpty()
+        }
+
+}
+
+
+internal object OkPublicPlayer : WebCatalog("OK.ru", "https://ok.ru/") {
+    override val firstPage = home
+    override fun searchPage(query: String) = home
+    override fun cards(document: Document) = emptyList<Card>()
+    override suspend fun detail(document: Document): Detail? = null
+
+    private val quality = mapOf(
+        "mobile" to 144, "lowest" to 240, "low" to 360, "sd" to 480,
+        "hd" to 720, "full" to 1080, "quad" to 1440, "ultra" to 2160,
+    )
+
+    fun streams(document: Document): List<Media> =
+        document.select("[data-options]").flatMap { player ->
+            try {
+                val flash = JSONObject(player.attr("data-options")).optJSONObject("flashvars")
+                val metadata = when (val value = flash?.opt("metadata")) {
+                    is JSONObject -> value
+                    is String -> JSONObject(value)
+                    else -> null
+                } ?: return@flatMap emptyList()
+                val manifest = metadata.optString("hlsManifestUrl")
+                val videos = metadata.optJSONArray("videos") ?: JSONArray()
+                listOfNotNull(readStream(document, manifest, "application/x-mpegurl")) +
+                    (0 until videos.length()).mapNotNull { i ->
+                        val video = videos.optJSONObject(i) ?: return@mapNotNull null
+                        readStream(document, video.optString("url"), "video/mp4")
+                            ?.copy(resolution = quality[video.optString("name")])
+                    }
+            } catch (_: JSONException) {
+                emptyList()
+            }
+        }.distinctBy(Media::url)
+
+    private fun readStream(document: Document, value: String, mime: String): Media? {
+        if (value.isBlank()) return null
+        val uri = runCatching { URI(document.location()).resolve(value) }.getOrNull() ?: return null
+        val host = uri.host ?: return null
+        if (!host.endsWith(".okcdn.ru") && !host.endsWith(".vkuser.net")) return null
+        return mediaAt(uri.toString(), mime)?.copy(referer = home)
+    }
 }
