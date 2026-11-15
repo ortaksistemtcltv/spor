@@ -13,11 +13,13 @@ https://raw.githubusercontent.com/ortaksistemtcltv/spor/main/repo.json
 
 | Ana ekran bölümü | Kaynaklar |
 | --- | --- |
-| FİLM | HDFİLMCEHENNEMİ |
-| DİZİ | DİZİBOX |
+| FİLM | HDFİLMCEHENNEMİ, DİZİFİLMİZLE, JETFİLMİZLE, SİNEMAGG, WEBTEİZLE, RAREFILMM |
+| DİZİ | DİZİBOX, DİZİFİLMİZLE, DİZİRELLA, DMAX, TLC |
 | SPOR | Yayıncı Kaynakları, JUSTIN SPOR, TRGOALS, DOĞU SPOR, VAVOO SPOR |
 
-HDFİLMCEHENNEMİ ve DİZİBOX katalogları sitelerden yüklenir. Katalog erişimi ve oynatma, sitelerin cihazınıza döndürdüğü yanıta bağlıdır. FİLM ve DİZİ doğrudan HTTPS HLS, DASH, MP4 ve WebM bağlantılarını oynatıcıya gönderir. Bir kaynak yalnızca web oynatıcı sayfası veriyorsa o adres medya akışı olarak sunulmaz.
+FİLM ve DİZİ satırları kaynak sitelerin herkese açık kataloglarını yükler. Aramada, sitenin kullanılan arama sayfası sonuç vermezse ilk katalog sayfasındaki başlıklar taranır. CloudStream, sayfada bulunan doğrudan HTTPS HLS, DASH, MP4 ve WebM bağlantılarını kullanır. RareFilmm sayfalarındaki herkese açık OK.ru video oynatıcıları CloudStream’in yerleşik çözümleyicisine aktarılır. Yeni satırlardaki kataloglar doğrulandı. Oynatma her içerik için ayrı değerlendirilir.
+
+Yeni kaynaklar [Ripplay](https://github.com/Ripplay/cloudstream-repo), [Nikyokki](https://github.com/nikyokki/nik-cloudstream) ve [TurkSinema](https://github.com/Wiojelt/TurkSinema) depolarındaki kataloglardan seçildi. SEYİRBOX, her kaynağın herkese açık HTML sayfalarını kendi ayrıştırıcısıyla okur.
 
 [Kaynak kayıtları](data/seyirbox-sources.json) · [Eklenti dizini](https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/plugins.json)
 

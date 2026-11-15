@@ -16,7 +16,13 @@ import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 internal class CatalogProvider(
     displayName: String,
@@ -28,6 +34,10 @@ internal class CatalogProvider(
     override var lang = "tr"
     override val supportedTypes = setOf(contentType)
     override val hasMainPage = true
+    private companion object {
+        val searchRequests = Semaphore(6)
+    }
+
     override val mainPage = mainPageOf(*sources.map { it.firstPage to it.label }.toTypedArray())
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -52,13 +62,17 @@ internal class CatalogProvider(
     override suspend fun search(query: String): List<SearchResponse> {
         val term = query.trim()
         if (term.isEmpty()) return emptyList()
-        return sources.flatMap { source ->
-            source.search(term).map(::item)
+        return coroutineScope {
+            sources.map { source ->
+                async { searchRequests.withPermit { source.search(term).map(::item) } }
+            }.awaitAll().flatten()
         }
     }
 
+    fun handles(url: String): Boolean = sources.any { it.handles(url) }
+
     override suspend fun load(url: String): LoadResponse? {
-        val source = sources.firstOrNull { it.supports(url) } ?: return null
+        val source = sources.firstOrNull { it.handles(url) } ?: return null
         val document = source.fetch(url) ?: return null
         val detail = source.detail(document) ?: return null
         if (contentType == TvType.Movie) {
@@ -86,7 +100,7 @@ internal class CatalogProvider(
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
-        val source = sources.firstOrNull { it.supports(data) } ?: return false
+        val source = sources.firstOrNull { it.handles(data) } ?: return false
         val document = source.fetch(data) ?: return false
         val streams = publicMedia(document)
         streams.forEach { stream ->
@@ -97,7 +111,14 @@ internal class CatalogProvider(
             }
             callback(newExtractorLink(name, source.label, stream.url, type))
         }
-        return streams.isNotEmpty()
+        var hasLinks = streams.isNotEmpty()
+        for (url in source.publicEmbeds(document)) {
+            loadExtractor(url, document.location(), subtitleCallback) { link ->
+                hasLinks = true
+                callback(link)
+            }
+        }
+        return hasLinks
     }
 
     private fun item(card: Card): SearchResponse =

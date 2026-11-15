@@ -16,8 +16,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.ortaksistem.seyirbox.catalog.CatalogProvider
-import com.ortaksistem.seyirbox.catalog.DiziBox
-import com.ortaksistem.seyirbox.catalog.FilmCehennemi
+import com.ortaksistem.seyirbox.catalog.filmCatalogs
+import com.ortaksistem.seyirbox.catalog.seriesCatalogs
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import java.text.Normalizer
@@ -30,8 +30,8 @@ class SporBProvider : MainAPI() {
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Live)
     override val hasMainPage = true
 
-    private val film = CatalogProvider(name, TvType.Movie, listOf(FilmCehennemi))
-    private val dizi = CatalogProvider(name, TvType.TvSeries, listOf(DiziBox))
+    private val film = CatalogProvider(name, TvType.Movie, filmCatalogs)
+    private val dizi = CatalogProvider(name, TvType.TvSeries, seriesCatalogs)
     private val webPages: List<Pair<MainPageData, CatalogProvider>> = listOf("FİLM" to film, "DİZİ" to dizi).flatMap { (section, provider) ->
         provider.mainPage.map { page ->
             mainPage(page.data, "$section · ${page.name}", page.horizontalImages) to provider
@@ -48,8 +48,8 @@ class SporBProvider : MainAPI() {
     )
 
     private fun webProvider(url: String): CatalogProvider? = when {
-        FilmCehennemi.supports(url) -> film
-        DiziBox.supports(url) -> dizi
+        film.handles(url) -> film
+        dizi.handles(url) -> dizi
         else -> null
     }
 

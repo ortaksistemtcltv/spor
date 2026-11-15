@@ -26,6 +26,7 @@ internal data class Media(val url: String, val format: MediaFormat)
 
 internal abstract class WebCatalog(val label: String, val home: String) {
     private val hosts = setOf(URI(home).host, URI(home).host.removePrefix("www."))
+    protected open val responseCharset = "UTF-8"
     abstract val firstPage: String
     abstract fun searchPage(query: String): String
     abstract fun cards(document: Document): List<Card>
@@ -34,10 +35,14 @@ internal abstract class WebCatalog(val label: String, val home: String) {
 
     abstract suspend fun detail(document: Document): Detail?
 
+    open fun publicEmbeds(document: Document): List<String> = emptyList()
+
     fun supports(url: String): Boolean {
         val uri = httpsUri(url) ?: return false
         return uri.host in hosts && uri.port in setOf(-1, 443)
     }
+
+    open fun handles(url: String): Boolean = supports(url)
 
     fun nextPage(document: Document): String? =
         document.selectFirst("link[rel=next], a[rel=next], a.next, a.nextpostslink")
@@ -94,7 +99,7 @@ internal abstract class WebCatalog(val label: String, val home: String) {
         val page = ByteArrayOutputStream()
         while (page.size() <= MAX_PAGE_BYTES) {
             val read = input.read(buffer)
-            if (read < 0) return page.toString("UTF-8")
+            if (read < 0) return page.toString(responseCharset)
             page.write(buffer, 0, read)
         }
         return null
@@ -114,10 +119,12 @@ private fun httpsUri(url: String): URI? =
         it.scheme == "https" && it.host != null && it.userInfo == null
     }
 
+internal fun isHttpsUrl(url: String): Boolean = httpsUri(url) != null
+
 internal fun imageOf(element: Element?): String? {
     if (element == null) return null
     return sequenceOf("data-src", "data-lazy-src", "src")
-        .map(element::absUrl).firstOrNull { httpsUri(it) != null }
+        .map(element::absUrl).firstOrNull(::isHttpsUrl)
 }
 
 internal fun publicMedia(document: Document): List<Media> =

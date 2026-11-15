@@ -12,6 +12,36 @@
           "status": "preview"
         },
         {
+          "name": "DİZİFİLMİZLE",
+          "catalogPage": "https://dizifilmizle.to/",
+          "status": "catalog-verified",
+          "reference": "https://github.com/Ripplay/cloudstream-repo"
+        },
+        {
+          "name": "JETFİLMİZLE",
+          "catalogPage": "https://jetfilmizle.app/filmler",
+          "status": "catalog-verified",
+          "reference": "https://github.com/Ripplay/cloudstream-repo"
+        },
+        {
+          "name": "SİNEMAGG",
+          "catalogPage": "https://sinemacc.com/film-arsivi/",
+          "status": "catalog-verified",
+          "reference": "https://github.com/Ripplay/cloudstream-repo"
+        },
+        {
+          "name": "WEBTEİZLE",
+          "catalogPage": "https://webteizle.info/film-izle/",
+          "status": "catalog-verified",
+          "reference": "https://github.com/nikyokki/nik-cloudstream"
+        },
+        {
+          "name": "RAREFILMM",
+          "catalogPage": "https://rarefilmm.com/",
+          "status": "catalog-verified",
+          "reference": "https://github.com/Wiojelt/TurkSinema"
+        },
+        {
           "name": "FİLMBOX",
           "status": "address-pending"
         }
@@ -25,6 +55,30 @@
           "name": "DİZİBOX",
           "catalogPage": "https://www.dizibox.live/dizi-arsivi/",
           "status": "preview"
+        },
+        {
+          "name": "DİZİFİLMİZLE",
+          "catalogPage": "https://dizifilmizle.to/yabanci-dizi-izle",
+          "status": "catalog-verified",
+          "reference": "https://github.com/Ripplay/cloudstream-repo"
+        },
+        {
+          "name": "DİZİRELLA",
+          "catalogPage": "https://dizirella.one/dizi-arsivi/",
+          "status": "catalog-verified",
+          "reference": "https://github.com/Ripplay/cloudstream-repo"
+        },
+        {
+          "name": "DMAX",
+          "catalogPage": "https://www.dmax.com.tr/kesfet",
+          "status": "catalog-verified",
+          "reference": "https://github.com/nikyokki/nik-cloudstream"
+        },
+        {
+          "name": "TLC",
+          "catalogPage": "https://www.tlctv.com.tr/kesfet",
+          "status": "catalog-verified",
+          "reference": "https://github.com/nikyokki/nik-cloudstream"
         }
       ]
     },
