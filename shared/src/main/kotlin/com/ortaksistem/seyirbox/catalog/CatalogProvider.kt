@@ -18,6 +18,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -109,16 +110,23 @@ internal class CatalogProvider(
                 MediaFormat.DASH -> ExtractorLinkType.DASH
                 MediaFormat.VIDEO -> ExtractorLinkType.VIDEO
             }
-            callback(newExtractorLink(name, source.label, stream.url, type))
+            callback(newExtractorLink(name, source.label, stream.url, type) {
+                referer = document.location()
+            })
         }
-        var hasLinks = streams.isNotEmpty()
+        val seen = streams.mapTo(mutableSetOf()) { it.url }
         for (url in source.publicEmbeds(document)) {
-            loadExtractor(url, document.location(), subtitleCallback) { link ->
-                hasLinks = true
-                callback(link)
+            try {
+                loadExtractor(url, document.location(), subtitleCallback) { link ->
+                    if (seen.add(link.url)) callback(link)
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                // Another player or a direct source may still be available.
             }
         }
-        return hasLinks
+        return seen.isNotEmpty()
     }
 
     private fun item(card: Card): SearchResponse =

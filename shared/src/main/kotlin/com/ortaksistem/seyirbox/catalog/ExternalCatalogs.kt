@@ -7,7 +7,6 @@ import org.json.JSONTokener
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URI
-import java.text.Normalizer
 import java.util.Locale
 
 internal val filmCatalogs: List<WebCatalog> = listOf(
@@ -60,8 +59,7 @@ private open class HtmlCatalog(
     override suspend fun search(query: String): List<Card> {
         val results = if (searchPath == null) emptyList() else super.search(query)
         if (results.isNotEmpty()) return results
-        val term = searchText(query)
-        return fetch(firstPage)?.let(::cards).orEmpty().filter { searchText(it.title).contains(term) }
+        return searchFirstPage(query)
     }
 
     override fun cards(document: Document): List<Card> =
@@ -108,10 +106,6 @@ private open class HtmlCatalog(
             val episode = match.groupValues[2].toIntOrNull() ?: return@mapNotNull null
             Chapter("$season. Sezon $episode. Bölüm", url, season, episode)
         }.distinctBy { it.season to it.number }.sortedWith(compareBy(Chapter::season, Chapter::number)).toList()
-
-    private fun searchText(text: String): String =
-        Normalizer.normalize(text.lowercase(Locale.ROOT).replace('ı', 'i'), Normalizer.Form.NFD)
-            .filterNot { Character.getType(it) == Character.NON_SPACING_MARK.toInt() }
 
     private fun backgroundPoster(element: Element?, document: Document): String? {
         val style = element?.attr("style") ?: return null

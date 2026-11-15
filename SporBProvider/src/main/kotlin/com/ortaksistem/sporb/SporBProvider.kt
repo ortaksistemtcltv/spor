@@ -67,7 +67,7 @@ class SporBProvider : MainAPI() {
     private val official = listOf(
         SportsChannel(1001, "TRT Spor", "Spor", "TRT", "https://tv-trtspor1.medya.trt.com.tr/master.m3u8", emptyMap()),
         SportsChannel(1002, "TRT Spor Yıldız", "Spor", "TRT", "https://tv-trtspor2.medya.trt.com.tr/master.m3u8", emptyMap()),
-        SportsChannel(1003, "A Spor", "Spor", "A Spor", "https://trkvz-live.daioncdn.net/aspor/aspor.m3u8", emptyMap()),
+        SportsChannel(1003, "A Spor", "Spor", "A Spor", "https://rnttwmjcin.turknet.ercdn.net/lcpmvefbyo/aspor/aspor.m3u8", emptyMap()),
     )
     private val officialBackups = mapOf(
         1001 to "https://trt.daioncdn.net/trtspor/master.m3u8?app=web&platform=trtspor",

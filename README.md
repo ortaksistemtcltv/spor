@@ -17,7 +17,7 @@ https://raw.githubusercontent.com/ortaksistemtcltv/spor/main/repo.json
 | DİZİ | DİZİBOX, DİZİFİLMİZLE, DİZİRELLA, DMAX, TLC |
 | SPOR | Yayıncı Kaynakları, JUSTIN SPOR, TRGOALS, DOĞU SPOR, VAVOO SPOR |
 
-FİLM ve DİZİ satırları kaynak sitelerin herkese açık kataloglarını yükler. Aramada, sitenin kullanılan arama sayfası sonuç vermezse ilk katalog sayfasındaki başlıklar taranır. CloudStream, sayfada bulunan doğrudan HTTPS HLS, DASH, MP4 ve WebM bağlantılarını kullanır. RareFilmm sayfalarındaki herkese açık OK.ru video oynatıcıları CloudStream’in yerleşik çözümleyicisine aktarılır. Yeni satırlardaki kataloglar doğrulandı. Oynatma her içerik için ayrı değerlendirilir.
+FİLM ve DİZİ satırları kaynak sitelerin herkese açık kataloglarını yükler. Aramada, sitenin kullanılan arama sayfası sonuç vermezse ilk katalog sayfasındaki başlıklar taranır. CloudStream, sayfada bulunan doğrudan HTTPS HLS, DASH, MP4 ve WebM bağlantılarını kullanır. RareFilmm sayfalarındaki herkese açık OK.ru video oynatıcıları CloudStream’in yerleşik çözümleyicisine aktarılır. DİZİBOX arama isteği sonuç vermezse arşivin ilk sayfasındaki başlıklar taranır. HDFİLMCEHENNEMİ kataloğu ile DİZİBOX detay sayfalarında erişim kısıtlaması görüldü. Oynatma her içerik için ayrı değerlendirilir.
 
 Yeni kaynaklar [Ripplay](https://github.com/Ripplay/cloudstream-repo), [Nikyokki](https://github.com/nikyokki/nik-cloudstream) ve [TurkSinema](https://github.com/Wiojelt/TurkSinema) depolarındaki kataloglardan seçildi. SEYİRBOX, her kaynağın herkese açık HTML sayfalarını kendi ayrıştırıcısıyla okur.
 
@@ -45,4 +45,4 @@ CloudStream’in yerleşik oynatıcısı doğrudan medya akışı beklediği iç
 
 [Taraftarium24 karşılaşma rehberi](data/taraftarium24-program.json), `taraftarium24.run` üzerindeki değişken maç programına ve spor kategorilerine bağlantı verir. Maç ayrıntısındaki yayın seçenekleri sitenin web oynatıcı sayfasını açar.
 
-Bu üç dosya GitHub'daki web kataloglarıdır. CloudStream cihazındaki oynatılabilir gruplar `data/channels.json` üzerinden oluşturulur.
+Bu web kataloglarına GitHub’dan erişilir. CloudStream'in SPOR satırları `data/channels.json` üzerinden oluşturulur. Tekrar kontrolde 404 ya da medya yerine HTML döndüren kayıtlar [devre dışı bırakılan kaynaklar listesinde](data/unavailable-sports-sources.json) işaretlidir. Diğer kanal kimlikleri aynı kaldığı için mevcut bağlantılar çalışmaya devam eder.

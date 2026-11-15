@@ -1,0 +1,520 @@
+{
+  "disabled": [
+    {
+      "id": 29,
+      "name": "TJK TV",
+      "source": "Tvjustin",
+      "reason": "http-404"
+    },
+    {
+      "id": 57,
+      "name": "TJK TV",
+      "source": "Trgoals",
+      "reason": "html-instead-of-stream"
+    },
+    {
+      "id": 71,
+      "name": "4K TR: TRT SPOR HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 73,
+      "name": "BEIN SPORTS 1 .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 74,
+      "name": "BEIN SPORTS 1 (720PFEED) .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 75,
+      "name": "BEIN SPORTS 1 [LIVE DURING EVENTS ONLY] .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 76,
+      "name": "BEIN SPORTS 1 + .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 77,
+      "name": "BEIN SPORTS 1 50 FPS .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 78,
+      "name": "BEIN SPORTS 1 SD (480P) .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 79,
+      "name": "BEIN SPORTS a 1 SD (360P) .a",
+      "source": "Vavoo Turkey",
+      "reason": "html-instead-of-stream"
+    },
+    {
+      "id": 80,
+      "name": "BEIN SPORTS 1 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 81,
+      "name": "BEIN SPORTS 1 HD (TURKEY) .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 82,
+      "name": "BEIN SPORTS 2 .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 83,
+      "name": "BEIN SPORTS 2 .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 84,
+      "name": "BEIN SPORTS 2 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 85,
+      "name": "BEIN SPORTS 2 SD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 100,
+      "name": "BEIN SPORTS 5 FHD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 101,
+      "name": "BEIN SPORTS 5 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 102,
+      "name": "BEIN SPORTS 720P FEED .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 103,
+      "name": "BEIN SPORTS 8K FEED .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 104,
+      "name": "BEIN SPORTS FEED (OZEL FEED YAYIN) .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 105,
+      "name": "BEIN SPORTS HABER .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 106,
+      "name": "BEIN SPORTS HABER .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 107,
+      "name": "BEIN SPORTS HABER HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 108,
+      "name": "BEIN SPORTS HABER RAW .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 109,
+      "name": "BEIN SPORTS MAX 1 .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 110,
+      "name": "BEIN SPORTS MAX 1 .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 111,
+      "name": "BEIN SPORTS MAX 1 FHD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 112,
+      "name": "BEIN SPORTS MAX 1 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 113,
+      "name": "BEIN SPORTS MAX 2 .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 114,
+      "name": "BEIN SPORTS MAX 2 .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 143,
+      "name": "EXXEN SPORTS 2 [LIVE DURING EVENTS ONLY] .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 144,
+      "name": "EXXEN SPORTS 3 [LIVE DURING EVENTS ONLY] .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 145,
+      "name": "EXXEN SPORTS 4 .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 146,
+      "name": "EXXEN SPORTS 5 .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 147,
+      "name": "EXXEN SPORTS 6 [LIVE DURING EVENTS ONLY] .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 148,
+      "name": "EXXEN SPORTS 7 .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 149,
+      "name": "EXXEN SPORTS 8 .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 150,
+      "name": "EXXEN TV .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 151,
+      "name": "EXXEN TV SPOR 1 .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 152,
+      "name": "EXXEN TV SPOR 1 720P .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 153,
+      "name": "EXXEN TV SPOR 1 FEED .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 154,
+      "name": "EXXEN TV SPOR 1 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 155,
+      "name": "EXXEN TV SPOR 1 UHD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 156,
+      "name": "EXXEN TV SPOR 2 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 157,
+      "name": "EXXEN TV SPOR 2 UHD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 158,
+      "name": "EXXEN TV SPOR 3 .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 159,
+      "name": "EXXEN TV SPOR 4 .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 160,
+      "name": "EXXEN TV SPOR 5 .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 161,
+      "name": "EXXEN TV SPOR 6 .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 162,
+      "name": "EXXEN TV SPOR 7 .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 163,
+      "name": "EXXEN TV SPOR 8 .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 164,
+      "name": "FB TV .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 165,
+      "name": "FB TV .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 166,
+      "name": "HT SPOR HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 167,
+      "name": "IDMAN TV HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 168,
+      "name": "S SPORT .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 169,
+      "name": "S SPORT .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 170,
+      "name": "S SPORT 2 .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 199,
+      "name": "TIVIBU SPOR 2 .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 200,
+      "name": "TIVIBU SPOR 2 .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 201,
+      "name": "TIVIBU SPOR 3 .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 202,
+      "name": "TIVIBU SPOR 3 .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 203,
+      "name": "TIVIBU SPOR 4 .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 204,
+      "name": "TIVIBU SPOR 4 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 205,
+      "name": "TIVIBU SPOR 5 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 206,
+      "name": "TIVIBU SPOR RAW .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 207,
+      "name": "TIVIBUSPOR 1 FHD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 208,
+      "name": "TIVIBUSPOR 1 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 209,
+      "name": "TIVIBUSPOR 2 FHD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 210,
+      "name": "TIVIBUSPOR 2 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 211,
+      "name": "TIVIBUSPOR 3 FHD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 212,
+      "name": "TIVIBUSPOR 3 HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 213,
+      "name": "TIVIBUSPOR SPOR HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 214,
+      "name": "TJK TV .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 215,
+      "name": "TJK TV .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 216,
+      "name": "TJK TV HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 217,
+      "name": "TRT SPOR .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 218,
+      "name": "TRT SPOR FHD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 219,
+      "name": "TRT SPOR HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 220,
+      "name": "TRT SPOR RAW .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 221,
+      "name": "TRT SPOR YILDIZ .c",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 222,
+      "name": "TRT SPOR YILDIZ .s",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 223,
+      "name": "TRT SPOR YILDIZ HD .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 224,
+      "name": "TRT SPOR YILDIZ HEVC .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    },
+    {
+      "id": 225,
+      "name": "TRT SPOR YILDIZ RAW .b",
+      "source": "Vavoo Turkey",
+      "reason": "http-404"
+    }
+  ]
+}

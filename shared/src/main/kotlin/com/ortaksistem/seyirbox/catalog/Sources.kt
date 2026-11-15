@@ -63,6 +63,9 @@ internal object DiziBox : WebCatalog("DİZİBOX", "https://www.dizibox.live/") {
     private val episodeFromTitle = Regex("""(\d+)\s*\.?\s*bölüm""", RegexOption.IGNORE_CASE)
     private val seasonRequests = Semaphore(4)
 
+    override suspend fun search(query: String): List<Card> =
+        super.search(query).ifEmpty { searchFirstPage(query) }
+
     override fun cards(document: Document): List<Card> = document
         .select("article.detailed-article h3 a[href]")
         .mapNotNull { link ->
@@ -95,7 +98,7 @@ internal object DiziBox : WebCatalog("DİZİBOX", "https://www.dizibox.live/") {
                 }
             }.awaitAll().flatten()
         }
-        val chapters = (localChapters + remoteChapters).distinctBy(Chapter::url)
+        val chapters = (localChapters + remoteChapters).distinctBy { it.url.trimEnd('/') }
             .sortedWith(compareBy({ it.season ?: Int.MAX_VALUE }, { it.number ?: Int.MAX_VALUE }, { it.title }))
         return Detail(title, poster, plot, chapters)
     }

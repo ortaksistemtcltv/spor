@@ -1,5 +1,7 @@
+from hashlib import sha256
 from pathlib import Path
 from shutil import copyfile
+from zipfile import BadZipFile, ZipFile
 import json
 import os
 import re
@@ -33,6 +35,20 @@ for entry in entries:
     artifact = root / internal_name / "build" / filename
     if not artifact.is_file():
         raise SystemExit(f"Derlenen eklenti bulunamadı: {filename}")
+    data = artifact.read_bytes()
+    if entry.get("fileSize") != len(data) or entry.get("fileHash") != f"sha256-{sha256(data).hexdigest()}":
+        raise SystemExit(f"Eklenti boyutu veya özeti eşleşmiyor: {filename}")
+
+    try:
+        with ZipFile(artifact) as package:
+            if package.testzip() is not None or not package.read("classes.dex").startswith(b"dex\n"):
+                raise SystemExit(f"Eklenti DEX dosyası geçersiz: {filename}")
+            packaged_manifest = json.loads(package.read("manifest.json"))
+    except (BadZipFile, KeyError, ValueError) as error:
+        raise SystemExit(f"Eklenti arşivi geçersiz: {filename}") from error
+
+    if packaged_manifest.get("version") != entry.get("version") or packaged_manifest.get("name") != internal_name:
+        raise SystemExit(f"Eklenti kimliği veya sürümü eşleşmiyor: {filename}")
     artifacts[filename] = artifact
     if internal_name in display_names:
         entry["name"] = display_names[internal_name]

@@ -11,6 +11,7 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URLEncoder
+import java.text.Normalizer
 import java.util.Locale
 
 internal data class Card(val title: String, val url: String, val poster: String?)
@@ -33,6 +34,12 @@ internal abstract class WebCatalog(val label: String, val home: String) {
     open suspend fun search(query: String): List<Card> =
         fetch(searchPage(query))?.let(::cards).orEmpty()
 
+    protected suspend fun searchFirstPage(query: String): List<Card> {
+        val term = searchText(query)
+        if (term.isBlank()) return emptyList()
+        return fetch(firstPage)?.let(::cards).orEmpty().filter { searchText(it.title).contains(term) }
+    }
+
     abstract suspend fun detail(document: Document): Detail?
 
     open fun publicEmbeds(document: Document): List<String> = emptyList()
@@ -44,9 +51,12 @@ internal abstract class WebCatalog(val label: String, val home: String) {
 
     open fun handles(url: String): Boolean = supports(url)
 
-    fun nextPage(document: Document): String? =
-        document.selectFirst("link[rel=next], a[rel=next], a.next, a.nextpostslink")
-            ?.absUrl("href")?.takeIf(::supports)?.takeIf { it != document.location() }
+    fun nextPage(document: Document): String? {
+        val current = document.location().substringBefore('#')
+        return document.select("link[rel=next], a[rel=next], a.next, a.nextpostslink").asSequence()
+            .map { it.absUrl("href").substringBefore('#') }
+            .firstOrNull { it != current && supports(it) }
+    }
 
     suspend fun fetch(url: String): Document? =
         read(url)?.let { Jsoup.parse(it.body, it.url) }
@@ -127,17 +137,28 @@ internal fun imageOf(element: Element?): String? {
         .map(element::absUrl).firstOrNull(::isHttpsUrl)
 }
 
+private fun searchText(text: String): String =
+    Normalizer.normalize(text.lowercase(Locale.ROOT).replace('ı', 'i'), Normalizer.Form.NFD)
+        .filterNot { Character.getType(it) == Character.NON_SPACING_MARK.toInt() }
+
 internal fun publicMedia(document: Document): List<Media> =
-    document.select("video[src], video source[src]").mapNotNull { element ->
-        val url = element.absUrl("src")
-        val uri = httpsUri(url) ?: return@mapNotNull null
-        val path = uri.path.orEmpty().lowercase(Locale.ROOT)
-        val mime = element.attr("type").substringBefore(';').trim().lowercase(Locale.ROOT)
-        val format = when {
-            path.endsWith(".m3u8") || mime in setOf("application/vnd.apple.mpegurl", "application/x-mpegurl") -> MediaFormat.HLS
-            path.endsWith(".mpd") || mime == "application/dash+xml" -> MediaFormat.DASH
-            path.endsWith(".mp4") || path.endsWith(".webm") || mime == "video/mp4" || mime == "video/webm" -> MediaFormat.VIDEO
-            else -> return@mapNotNull null
-        }
-        Media(url, format)
-    }.distinctBy(Media::url)
+    document.select("video[src], video[data-src], video source[src], video source[data-src]")
+        .flatMap { element ->
+            val mime = element.attr("type").substringBefore(';').trim().lowercase(Locale.ROOT)
+            listOfNotNull(
+                mediaAt(element.absUrl("src"), mime),
+                mediaAt(element.absUrl("data-src"), mime),
+            )
+        }.distinctBy(Media::url)
+
+private fun mediaAt(url: String, mime: String): Media? {
+    val uri = httpsUri(url) ?: return null
+    val path = uri.path.orEmpty().lowercase(Locale.ROOT)
+    val format = when {
+        path.endsWith(".m3u8") || mime in setOf("application/vnd.apple.mpegurl", "application/x-mpegurl", "audio/mpegurl") -> MediaFormat.HLS
+        path.endsWith(".mpd") || mime == "application/dash+xml" -> MediaFormat.DASH
+        path.endsWith(".mp4") || path.endsWith(".webm") || mime == "video/mp4" || mime == "video/webm" -> MediaFormat.VIDEO
+        else -> return null
+    }
+    return Media(url, format)
+}

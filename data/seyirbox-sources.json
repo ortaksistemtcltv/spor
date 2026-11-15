@@ -9,7 +9,7 @@
         {
           "name": "HDFİLMCEHENNEMİ",
           "catalogPage": "https://www.hdfilmcehennemi.nl/category/film-izle-2/",
-          "status": "preview"
+          "status": "access-limited"
         },
         {
           "name": "DİZİFİLMİZLE",
@@ -54,7 +54,8 @@
         {
           "name": "DİZİBOX",
           "catalogPage": "https://www.dizibox.live/dizi-arsivi/",
-          "status": "preview"
+          "status": "catalog-verified",
+          "detailsStatus": "access-limited"
         },
         {
           "name": "DİZİFİLMİZLE",

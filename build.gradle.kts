@@ -12,6 +12,8 @@ buildscript {
 
     dependencies {
         classpath("com.android.tools.build:gradle:8.7.3")
+        // AGP 8.7 bundles a D8 version that cannot read Kotlin 2.3 metadata.
+        classpath("com.android.tools:r8:8.13.19")
         // Cloudstream gradle plugin which makes everything work and builds plugins
         classpath("com.github.recloudstream:gradle:-SNAPSHOT")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0")
