@@ -12,6 +12,7 @@ import com.lagradost.cloudstream3.newLiveStreamLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import java.text.Normalizer
 import java.util.Locale
 
 class SporBProvider : MainAPI() {
@@ -39,7 +40,36 @@ class SporBProvider : MainAPI() {
         1001 to "https://trt.daioncdn.net/trtspor/master.m3u8?app=web&platform=trtspor",
         1002 to "https://trt.daioncdn.net/trtspor-yildiz/master.m3u8?app=web&platform=trtspor",
     )
+    private data class Stream(val label: String, val url: String, val headers: Map<String, String>)
+
     private val allChannels = official + channels
+    private val officialByName = official.associateBy { channelKey(it.name) }
+    private val mirrorsByName = channels.groupBy { channelKey(it.name) }
+
+    private fun channelKey(name: String): String =
+        Normalizer.normalize(name.lowercase(Locale.ROOT).replace('ı', 'i'), Normalizer.Form.NFKD)
+            .filterNot { Character.getType(it) == Character.NON_SPACING_MARK.toInt() }
+            .replace(Regex("[^a-z0-9]+"), " ")
+            .trim()
+
+    private fun streamsFor(channel: SportsChannel): List<Stream> {
+        val key = channelKey(channel.name)
+        val broadcaster = officialByName[key]
+        val matchingChannels = if (broadcaster != null) {
+            if (channel.id == broadcaster.id) listOf(broadcaster) else {
+                listOf(broadcaster, channel) + mirrorsByName[key].orEmpty()
+            }
+        } else {
+            listOf(channel) + mirrorsByName[key].orEmpty()
+        }
+
+        return matchingChannels.distinctBy { it.id }.flatMap { match ->
+            listOfNotNull(
+                Stream(match.source, match.url, match.headers),
+                officialBackups[match.id]?.let { Stream("${match.source} · Yedek", it, emptyMap()) },
+            )
+        }.distinctBy { it.url }
+    }
     private val byId = allChannels.associateBy { it.id }
 
     private fun findChannel(value: String): SportsChannel? {
@@ -67,7 +97,9 @@ class SporBProvider : MainAPI() {
 
     override suspend fun load(url: String) = findChannel(url)?.let { row ->
         newLiveStreamLoadResponse(row.name, itemUrl(row), itemUrl(row)) {
-            plot = "${row.group} · ${row.source}"
+            val count = streamsFor(row).size
+            plot = "${row.group} · ${row.source}" +
+                if (count > 1) "\n$count kaynak var. Yayın açılmazsa Kaynaklar menüsünden diğerini seç." else ""
         }
     }
 
@@ -78,18 +110,17 @@ class SporBProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
         val row = findChannel(data) ?: return false
-        val streams = listOfNotNull(row.url, officialBackups[row.id])
-        streams.forEachIndexed { index, stream ->
-            val path = stream.substringBefore('#')
+        val streams = streamsFor(row)
+        streams.forEach { stream ->
+            val path = stream.url.substringBefore('#')
             val type = when {
                 path.contains(".m3u8", ignoreCase = true) -> ExtractorLinkType.M3U8
                 path.substringBefore('?').endsWith(".mpd", ignoreCase = true) -> ExtractorLinkType.DASH
                 else -> ExtractorLinkType.VIDEO
             }
-            val label = if (index == 0) row.source else "${row.source} · Yedek"
-            callback(newExtractorLink(name, label, stream, type) {
-                referer = row.headers["Referer"].orEmpty()
-                headers = row.headers
+            callback(newExtractorLink(name, stream.label, stream.url, type) {
+                referer = stream.headers["Referer"].orEmpty()
+                headers = stream.headers
             })
         }
         return true
