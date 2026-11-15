@@ -72,12 +72,14 @@
         {
           "name": "DMAX",
           "catalogPage": "https://www.dmax.com.tr/kesfet",
+          "livePage": "https://www.dmax.com.tr/canli-izle",
           "status": "catalog-verified",
           "reference": "https://github.com/nikyokki/nik-cloudstream"
         },
         {
           "name": "TLC",
           "catalogPage": "https://www.tlctv.com.tr/kesfet",
+          "livePage": "https://www.tlctv.com.tr/canli-izle",
           "status": "catalog-verified",
           "reference": "https://github.com/nikyokki/nik-cloudstream"
         }

@@ -24,8 +24,8 @@ internal val seriesCatalogs: List<WebCatalog> = listOf(
     HtmlCatalog("Dizirella", "https://dizirella.one/", "dizi-arsivi/", "a.r-card[href], .single-item .categorytitle a[href]", Regex("/dizi/[^/]+/?"), ".r-cap-t", posterContainer = ".single-item", searchPath = "?s=", episodePath = { path ->
         Regex("""/${Regex.escape(path.substringAfterLast('/'))}-(\d+)-sezon-(\d+)-bolum/?""")
     }),
-    broadcaster("DMAX", "https://www.dmax.com.tr/"),
-    broadcaster("TLC", "https://www.tlctv.com.tr/"),
+    BroadcasterCatalog("DMAX", "https://www.dmax.com.tr/", "https://www.dmax.com.tr/img/logo.svg"),
+    BroadcasterCatalog("TLC", "https://www.tlctv.com.tr/", "https://img-tlctv.mncdn.com/logo.png?v=1.1"),
 )
 
 private object WebteIzle : HtmlCatalog(
@@ -39,12 +39,33 @@ private object WebteIzle : HtmlCatalog(
 
 private val filmPath get() = Regex("/film/[^/]+/?")
 
-private fun broadcaster(name: String, home: String) =
-    HtmlCatalog(name, home, "kesfet", "section.grid.dyn-content .poster a[href]:has(img)", Regex("/[a-z0-9][a-z0-9-]+/?"), usePathTitle = true, episodePath = { path ->
+internal class BroadcasterCatalog(name: String, home: String, logo: String) : HtmlCatalog(
+    name, home, "kesfet", "section.grid.dyn-content .poster a[href]:has(img)",
+    Regex("/[a-z0-9][a-z0-9-]+/?"), usePathTitle = true, episodePath = { path ->
         Regex("""${Regex.escape(path)}/(\d+)-sezon-(\d+)-bolum/?""")
-    })
+    },
+) {
+    val liveCard = Card("$name Canlı Yayın", home + "canli-izle", logo)
+    val archiveCard = Card("$name Program Arşivi", firstPage, logo)
 
-private open class HtmlCatalog(
+    fun playbackCard(url: String): Card? {
+        if (!supports(url)) return null
+        val path = URI(url).path.trimEnd('/')
+        return listOf(liveCard, archiveCard).firstOrNull { URI(it.url).path == path }
+    }
+
+    override suspend fun search(query: String): List<Card> {
+        val term = query.trim()
+        val channels = if (term.equals(label, ignoreCase = true) || liveCard.title.equals(term, ignoreCase = true)) {
+            listOf(liveCard)
+        } else {
+            emptyList()
+        }
+        return channels + super.search(query)
+    }
+}
+
+internal open class HtmlCatalog(
     label: String,
     home: String,
     archive: String,

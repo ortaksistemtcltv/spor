@@ -16,7 +16,7 @@ import com.lagradost.cloudstream3.newMovieLoadResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.newExtractorLink
-import com.ortaksistem.seyirbox.catalog.BrowserPlayback
+import com.ortaksistem.seyirbox.catalog.WebPlayback
 import com.ortaksistem.seyirbox.catalog.CatalogProvider
 import com.ortaksistem.seyirbox.catalog.filmCatalogs
 import com.ortaksistem.seyirbox.catalog.seriesCatalogs
@@ -28,7 +28,7 @@ import java.util.Locale
 class SporBProvider internal constructor(
     private val openWebChannel: suspend (SportsWebChannel) -> Boolean,
 ) : MainAPI() {
-    constructor() : this({ BrowserPlayback.open(it.name, it.page, it.waitSeconds) })
+    constructor() : this({ WebPlayback.open(it.name, it.page, it.waitSeconds) })
 
     override var name = "SEYİRBOX"
     override var mainUrl = "https://github.com/" + SporBCatalogue.repository
@@ -199,9 +199,9 @@ class SporBProvider internal constructor(
                 uniqueUrl = url
                 posterUrl = ChannelArtwork.posterUrl(channelKey(channel.name))
                 plot = if (channel.waitSeconds > 0) {
-                    "Oynat’a basınca ${channel.waitSeconds} saniye sonra yayın sayfası tarayıcıda açılır."
+                    "Oynat’a basınca ${channel.waitSeconds} saniye sonra yayın sayfası uygulama içindeki web oynatıcıda açılır."
                 } else {
-                    "Oynat’a basınca kaynak sayfası tarayıcıda açılır."
+                    "Oynat’a basınca kaynak sayfası uygulama içindeki web oynatıcıda açılır."
                 }
             }
         }

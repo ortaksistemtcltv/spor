@@ -14,14 +14,16 @@ https://raw.githubusercontent.com/ortaksistemtcltv/spor/main/repo.json
 | Ana ekran bölümü | Kaynaklar |
 | --- | --- |
 | FİLM | HDFİLMCEHENNEMİ, DİZİFİLMİZLE, JETFİLMİZLE, SİNEMAGG, WEBTEİZLE, RAREFILMM |
-| DİZİ | DİZİBOX, DİZİFİLMİZLE, DİZİRELLA, DMAX, TLC |
+| DİZİ | DİZİBOX, DİZİFİLMİZLE, DİZİRELLA, DMAX (programlar ve canlı), TLC (programlar ve canlı) |
 | SPOR | Yayıncı Kaynakları, JUSTIN SPOR, TRGOALS, DOĞU SPOR, VAVOO SPOR, PATRON SPOR, SELCUK SPOR, TARAFTARIUM, TARAFTARIUM24 |
 
 SPOR satırları yatay kartlar ve hizalanmış kanal logoları kullanır. Arama sonuçlarında aynı logolar dikey kartlara yerleştirilir. [Logo kaynakları](assets/channel-logos/README.md)
 
-Film, dizi ve spor satırlarında kaynak adları gösterilir. DiziFilmizle dizileri ayrı satırda yer alır. Film sayfası doğrudan HTTPS HLS, DASH, MP4 veya WebM bağlantısı sunuyorsa CloudStream oynatıcısı kullanılır. RareFilmm’in herkese açık OK.ru oynatıcıları da desteklenir. Kaynak sitesi web oynatıcısı gerektiriyorsa **Oynat** tarayıcıyı açar. Dizi bölümleri kendi kaynak sayfalarında oynatılır.
+Film, dizi ve spor satırlarında kaynak adları gösterilir. DiziFilmizle dizileri ayrı satırda yer alır. Film sayfası doğrudan HTTPS HLS, DASH, MP4 veya WebM bağlantısı sunuyorsa CloudStream oynatıcısı kullanılır. RareFilmm’in herkese açık OK.ru oynatıcıları da desteklenir. Kaynak sitesi web oynatıcısı gerektiriyorsa **Oynat**, kaynak sayfasını CloudStream içindeki web oynatıcıda açar. Dizi bölümleri de bu oynatıcıda açılır.
 
-DİZİBOX araması sonuç vermezse arşivin ilk sayfası taranır. HDFilmCehennemi kataloğu ve örnek Dizibox detay sayfaları bazı isteklerde erişim kısıtlaması döndürdü. Tarayıcı erişimi kaynak sitesine ve bağlantıya bağlıdır.
+DMAX ve TLC satırlarının ilk kartı resmi canlı yayını açar. Program listesi alınamazsa aynı satırdaki Program Arşivi kartından yayıncının kataloğuna ulaşılabilir.
+
+DİZİBOX araması sonuç vermezse arşivin ilk sayfası taranır. HDFilmCehennemi kataloğu ve örnek Dizibox detay sayfaları bazı isteklerde erişim kısıtlaması döndürdü. Web oynatıcıda erişim kaynak sitesine ve bağlantıya bağlıdır.
 
 Yeni kaynaklar [Ripplay](https://github.com/Ripplay/cloudstream-repo), [Nikyokki](https://github.com/nikyokki/nik-cloudstream) ve [TurkSinema](https://github.com/Wiojelt/TurkSinema) depolarındaki kataloglardan seçildi. SEYİRBOX, her kaynağın herkese açık HTML sayfalarını kendi ayrıştırıcısıyla okur.
 
@@ -31,7 +33,7 @@ Ana yayın derlemesi tek **SEYİRBOX** eklentisini üretir. `-PpreviewCatalogs=t
 
 ## Web yayınları ve maç programı
 
-PATRON SPOR, SELCUK SPOR, TARAFTARIUM ve TARAFTARIUM24 kartlarında **Oynat** düğmesi iptal edilebilen beş saniyelik geri sayımı başlatır. Ardından Android’in tarayıcısı kaynak sayfayı açar. Kaynak sayfasındaki reklam ve oynatma davranışını yayın sitesi belirler. Android TV’de akış için URL açabilen bir tarayıcı gerekir.
+PATRON SPOR, SELCUK SPOR, TARAFTARIUM ve TARAFTARIUM24 kartlarında **Oynat** düğmesi iptal edilebilen beş saniyelik geri sayımı başlatır. Ardından kaynak sayfası CloudStream içindeki web oynatıcıda açılır. Kullanıcı etkileşimiyle ayrı açılan site pencereleri küçük ve kapatılabilir olarak gösterilir. Oynatıcıya gömülü reklamları ve reklam süresini kaynak sitesi yönetir. Cihazda Android System WebView desteği gerekir.
 
 - [PATRON SPOR](data/spor5-patronizle-kanallar.json) 36 benzersiz kanal sayfası.
 - [SELCUK SPOR](data/spor6-selcuksports-kanallar.json) 38 kanal sayfası.
