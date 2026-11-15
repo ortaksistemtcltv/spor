@@ -1,4 +1,4 @@
-version = 19
+version = 20
 
 cloudstream {
     description = "Film, dizi ve canlı spor kaynakları"

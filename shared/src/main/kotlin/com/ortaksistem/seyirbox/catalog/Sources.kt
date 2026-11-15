@@ -27,14 +27,19 @@ internal object FilmCehennemi : WebCatalog("HDFilmCehennemi", "https://www.hdfil
 
     fun installedProviderForUrl(url: String): MainAPI? = installedProvider(url)
 
+    override fun handles(url: String): Boolean = providerHost(url) != null
+
     internal fun installedProvider(url: String, candidates: Iterable<MainAPI> = APIHolder.allProviders): MainAPI? {
-        if (!supports(url)) return null
-        val host = URI(home).host.removePrefix("www.")
-        return candidates.firstOrNull { api ->
-            api.name.equals(label, ignoreCase = true) &&
-                httpsUri(api.mainUrl)?.let { it.host.removePrefix("www.") == host && it.port in setOf(-1, 443) } == true
-        }
+        val host = providerHost(url) ?: return null
+        val providers = candidates.filter { api -> api.name.equals(label, ignoreCase = true) && providerHost(api.mainUrl) != null }
+        return providers.firstOrNull { providerHost(it.mainUrl) == host }
+            ?: providers.firstOrNull().takeIf { url == firstPage }
     }
+
+    private fun providerHost(url: String): String? = httpsUri(url)
+        ?.takeIf { it.port in setOf(-1, 443) }
+        ?.host?.lowercase(Locale.ROOT)?.removePrefix("www.")
+        ?.takeIf { it in setOf("hdfilmcehennemi.nl", "hdfilmcehennemi.com") }
 
     override fun alternativePlayerUrls(document: Document): List<String> =
         document.select(".alternative-links button.alternative-link[data-video]").asSequence()

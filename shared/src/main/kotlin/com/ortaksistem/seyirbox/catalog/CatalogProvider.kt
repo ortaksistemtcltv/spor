@@ -25,6 +25,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 import java.util.concurrent.ConcurrentHashMap
 
@@ -46,6 +48,7 @@ internal class CatalogProvider(
     private companion object {
         val searchRequests = Semaphore(6)
         const val LEGACY_WEB_DATA = "seyirbox-web:"
+        const val INSTALLED_FILM_DATA = "seyirbox-hdfilm:"
     }
 
     override val mainPage = mainPageOf(*sources.map { it.firstPage to it.menuLabel }.toTypedArray())
@@ -55,6 +58,10 @@ internal class CatalogProvider(
             ?: return newHomePageResponse(request.name, emptyList(), hasNext = false)
         if (page < 1) return newHomePageResponse(request.name, emptyList(), hasNext = false)
 
+        if (source === FilmCehennemi) {
+            installedFilmPage(source, page, request)?.let { return it }
+        }
+
         val visited = mutableSetOf<String>()
         var next: String? = source.firstPage
         repeat(page - 1) {
@@ -63,9 +70,7 @@ internal class CatalogProvider(
             next = pageLoader(source, url)?.let(source::nextPage)
         }
         val document = next?.takeIf(visited::add)?.let { pageLoader(source, it) }
-        val programs = document?.let(source::cards).orEmpty().ifEmpty {
-            if (source === FilmCehennemi) installedFilmPage(source, page) else emptyList()
-        }
+        val programs = document?.let(source::cards).orEmpty()
         val broadcaster = source as? BroadcasterCatalog
         val items = buildList {
             if (page == 1 && broadcaster != null) add(item(broadcaster.liveCard, source))
@@ -80,12 +85,15 @@ internal class CatalogProvider(
         if (term.isEmpty()) return emptyList()
         return coroutineScope {
             sources.map { source ->
-                async { searchRequests.withPermit { source.search(term).map { item(it, source) } } }
+                async { searchRequests.withPermit { searchSource(source, term).map { item(it, source) } } }
             }.awaitAll().flatten()
         }
     }
 
-    fun handles(url: String): Boolean = sources.any { it.handles(url.removePrefix(LEGACY_WEB_DATA)) }
+    fun handles(url: String): Boolean {
+        val page = if (url.startsWith(INSTALLED_FILM_DATA)) installedFilmData(url)?.first ?: return false else url
+        return sources.any { it.handles(page.removePrefix(LEGACY_WEB_DATA)) }
+    }
 
     override suspend fun load(url: String): LoadResponse? {
         val source = sources.firstOrNull { it.handles(url) } ?: return null
@@ -93,18 +101,18 @@ internal class CatalogProvider(
             val card = source.liveCard
             return newLiveStreamLoadResponse(card.title, card.url, card.url) { posterUrl = card.poster }
         }
-        val document = pageLoader(source, url)
-        val detail = document?.let { source.detail(it) }
-        if (detail == null && source === FilmCehennemi) {
-            val installed = findInstalledFilmProvider(url)
-            val movie = installed?.load(url) as? MovieLoadResponse
-            if (movie != null) {
-                return newMovieLoadResponse(movie.name, url, contentType, url) {
+        if (source === FilmCehennemi) {
+            installedMovie(url)?.let { movie ->
+                val playback = JSONObject().put("page", url).put("data", movie.dataUrl).toString()
+                return newMovieLoadResponse(movie.name, url, contentType, INSTALLED_FILM_DATA + playback) {
                     posterUrl = movie.posterUrl
                     plot = movie.plot
+                    year = movie.year
                 }
             }
         }
+        val document = pageLoader(source, url)
+        val detail = document?.let { source.detail(it) }
         if (detail == null) {
             if (!source.isDetailUrl(url)) return null
             throw ErrorLoadingException("${source.label} içerik bilgilerini şu anda sunamıyor.")
@@ -140,32 +148,73 @@ internal class CatalogProvider(
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
-        val page = data.removePrefix(LEGACY_WEB_DATA)
+        val installedData = installedFilmData(data)
+        val page = installedData?.first ?: data.removePrefix(LEGACY_WEB_DATA)
         val source = sources.firstOrNull { it.handles(page) } ?: return false
         if (source === FilmCehennemi) {
             val installed = findInstalledFilmProvider(page)
-            if (installed != null && emitInstalledLinks(installed, page, isCasting, subtitleCallback, callback)) return true
+            val playData = installedData?.second ?: page
+            if (installed != null && emitInstalledLinks(installed, playData, isCasting, subtitleCallback, callback)) return true
         }
         val document = pageLoader(source, page) ?: return false
         val streams = source.resolveMedia(document, pageLoader, alternativeLoader)
         return emitNativeLinks(name, source.label, document, streams.media, streams.players, subtitleCallback, callback)
     }
 
-    private suspend fun installedFilmPage(source: FilmCehennemi, page: Int): List<Card> {
-        if (page != 1) return emptyList()
-        val installed = findInstalledFilmProvider(source.firstPage) ?: return emptyList()
-        val row = installed.mainPage.firstOrNull { it.data.endsWith("/home/") }
-            ?: installed.mainPage.firstOrNull() ?: return emptyList()
-        return try {
-            installed.getMainPage(page, MainPageRequest(row.name, row.data, row.horizontalImages))
-                ?.items.orEmpty().flatMap { it.list }
-                .filter { it.type == TvType.Movie && source.supports(it.url) }
-                .map { Card(it.name, it.url, it.posterUrl) }
-                .distinctBy(Card::url)
+    private fun installedFilmData(data: String): Pair<String, String>? {
+        if (!data.startsWith(INSTALLED_FILM_DATA) || data.length > 16_384) return null
+        val json = jsonValue(data.removePrefix(INSTALLED_FILM_DATA)) as? JSONObject ?: return null
+        val page = json.optString("page").takeIf(FilmCehennemi::handles) ?: return null
+        val playback = json.optString("data").takeIf(String::isNotBlank) ?: return null
+        return page to playback
+    }
+
+    private suspend fun installedMovie(page: String): MovieLoadResponse? =
+        try {
+            withTimeoutOrNull(12_000) { findInstalledFilmProvider(page)?.load(page) as? MovieLoadResponse }
         } catch (error: CancellationException) {
             throw error
         } catch (_: Exception) {
-            emptyList()
+            null
+        }
+
+    private fun filmCards(results: List<SearchResponse>): List<Card> = results
+        .filter { it.type == TvType.Movie && FilmCehennemi.handles(it.url) && findInstalledFilmProvider(it.url) != null }
+        .map { Card(it.name, it.url, it.posterUrl) }
+        .distinctBy(Card::url)
+
+    private suspend fun searchSource(source: WebCatalog, term: String): List<Card> {
+        if (source === FilmCehennemi) {
+            val installed = findInstalledFilmProvider(source.firstPage)
+            if (installed != null) {
+                try {
+                    val cards = filmCards(withTimeoutOrNull(12_000) { installed.search(term) }.orEmpty())
+                    if (cards.isNotEmpty()) return cards
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Exception) {
+                    // The local catalog is still available as a fallback.
+                }
+            }
+        }
+        return source.search(term)
+    }
+
+    private suspend fun installedFilmPage(source: FilmCehennemi, page: Int, request: MainPageRequest): HomePageResponse? {
+        val installed = findInstalledFilmProvider(source.firstPage) ?: return null
+        val row = installed.mainPage.firstOrNull { it.data.endsWith("/home/") }
+            ?: installed.mainPage.firstOrNull() ?: return null
+        return try {
+            val response = withTimeoutOrNull(12_000) {
+                installed.getMainPage(page, MainPageRequest(row.name, row.data, row.horizontalImages))
+            } ?: return null
+            val cards = filmCards(response.items.flatMap { it.list })
+            if (cards.isEmpty()) return null
+            newHomePageResponse(request.name, cards.map { item(it, source) }, response.hasNext)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            null
         }
     }
 
@@ -178,8 +227,10 @@ internal class CatalogProvider(
     ): Boolean {
         val urls = ConcurrentHashMap.newKeySet<String>()
         try {
-            provider.loadLinks(page, isCasting, subtitleCallback) { link ->
-                if (isNativeLink(link) && urls.add(link.url)) callback(link)
+            withTimeoutOrNull(25_000) {
+                provider.loadLinks(page, isCasting, subtitleCallback) { link ->
+                    if (isNativeLink(link) && urls.add(link.url)) callback(link)
+                }
             }
         } catch (error: CancellationException) {
             throw error
