@@ -1,21 +1,21 @@
 [
-    {
-        "fileHash": "sha256-78e9e72499397990eaa567662221fd7dc94b35600d78b772099f2165cfc5b907",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/ortaksistemtcltv/spor",
-        "fileSize": 24817,
-        "status": 1,
-        "language": "tr",
-        "authors": [
-            "OSPlayer"
-        ],
-        "tvTypes": [
-            "Live"
-        ],
-        "version": 5,
-        "internalName": "SporBProvider",
-        "description": "225 SporB kayd\u0131 ve yay\u0131nc\u0131 kaynaklar\u0131",
-        "url": "https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/SporBProvider.cs3",
-        "name": "SporBProvider"
-    }
+  {
+    "fileHash": "sha256-de11aa68d15b807d294c4fb5a58115a8a8b0fb1cb4913425d7515c0009037a3c",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/ortaksistemtcltv/spor",
+    "fileSize": 25022,
+    "status": 1,
+    "language": "tr",
+    "authors": [
+      "SPOR"
+    ],
+    "tvTypes": [
+      "Live"
+    ],
+    "version": 6,
+    "internalName": "SporBProvider",
+    "description": "Canlı spor kanalları ve yayıncı kaynakları",
+    "url": "https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/SporBProvider.cs3",
+    "name": "SPOR"
+  }
 ]
