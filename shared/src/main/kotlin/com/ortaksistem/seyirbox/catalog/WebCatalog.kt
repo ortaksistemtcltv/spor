@@ -34,6 +34,7 @@ internal data class Media(
 internal abstract class WebCatalog(val label: String, val home: String) {
     private val hosts = setOf(URI(home).host, URI(home).host.removePrefix("www."))
     protected open val responseCharset = "UTF-8"
+    open val menuLabel: String get() = label
     abstract val firstPage: String
     abstract fun searchPage(query: String): String
     abstract fun cards(document: Document): List<Card>

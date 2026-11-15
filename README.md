@@ -21,7 +21,7 @@ SPOR satırları yatay kartlar ve hizalanmış kanal logoları kullanır. Arama 
 
 Film ve dizi içerikleri CloudStream oynatıcısında açılır. Kaynağın sunduğu HTTPS medya bağlantıları ve CloudStream'in desteklediği gömülü oynatıcılardan çözülen bağlantılar kullanılır. Erişim ve medya bağlantısı her içerik için kaynak sağlayıcıya bağlıdır.
 
-DMAX ve TLC, programları ve canlı yayın kartlarıyla Film/Dizi bölümünde yer alır. Yayıncının herkese açık medya bilgisi döndürmesi gerekir.
+DMAX Program Arşivi ve TLC Program Arşivi satırları, programları ve canlı yayın kartlarıyla Film/Dizi bölümünde yer alır. Yayıncının herkese açık medya bilgisi döndürmesi gerekir.
 
 Yeni kaynaklar [Ripplay](https://github.com/Ripplay/cloudstream-repo), [Nikyokki](https://github.com/nikyokki/nik-cloudstream) ve [TurkSinema](https://github.com/Wiojelt/TurkSinema) depolarındaki kataloglardan seçildi. SEYİRBOX, her kaynağın herkese açık HTML sayfalarını kendi ayrıştırıcısıyla okur.
 

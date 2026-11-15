@@ -45,6 +45,7 @@ internal class BroadcasterCatalog(name: String, home: String, logo: String) : Ht
         Regex("""${Regex.escape(path)}/(\d+)-sezon-(\d+)-bolum/?""")
     },
 ) {
+    override val menuLabel = "$name Program Arşivi"
     val liveCard = Card("$name Canlı Yayın", home + "canli-izle", logo)
 
     fun isLivePage(url: String): Boolean = supports(url) &&

@@ -41,7 +41,7 @@ internal class CatalogProvider(
         const val LEGACY_WEB_DATA = "seyirbox-web:"
     }
 
-    override val mainPage = mainPageOf(*sources.map { it.firstPage to it.label }.toTypedArray())
+    override val mainPage = mainPageOf(*sources.map { it.firstPage to it.menuLabel }.toTypedArray())
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val source = sources.firstOrNull { it.firstPage == request.data }
@@ -124,11 +124,8 @@ internal class CatalogProvider(
         val page = data.removePrefix(LEGACY_WEB_DATA)
         val source = sources.firstOrNull { it.handles(page) } ?: return false
         val document = pageLoader(source, page) ?: return false
-        val candidates = publicMedia(document) + structuredMedia(document)
-        val embeds = source.embeddedPlayers(document)
-        val directEmbeds = embeds.mapNotNull { mediaAt(it, "") }
-        val media = candidates + directEmbeds + source.embeddedMedia(document)
-        return emitNativeLinks(name, source.label, document, media, embeds, subtitleCallback, callback)
+        val streams = source.resolveMedia(document, pageLoader)
+        return emitNativeLinks(name, source.label, document, streams.media, streams.players, subtitleCallback, callback)
     }
 
     private fun item(card: Card, source: WebCatalog): SearchResponse = when {

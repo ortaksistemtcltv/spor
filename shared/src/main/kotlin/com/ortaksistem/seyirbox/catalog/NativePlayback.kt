@@ -13,6 +13,25 @@ import org.json.JSONTokener
 import org.jsoup.nodes.Document
 import java.net.URI
 
+internal data class NativeSources(val media: List<Media>, val players: List<String>)
+
+internal suspend fun WebCatalog.resolveMedia(
+    document: Document,
+    pageLoader: suspend (WebCatalog, String) -> Document?,
+): NativeSources {
+    val players = embeddedPlayers(document)
+    val sameSitePlayers = players.filter(::supports).filter { it != document.location() }.take(2)
+    val playerPages = sameSitePlayers.mapNotNull { pageLoader(this, it) }
+    val documents = listOf(document) + playerPages
+    val allPlayers = (players + playerPages.flatMap(::embeddedPlayers)).distinct()
+    val media = documents.flatMap { page ->
+        (publicMedia(page) + structuredMedia(page) + embeddedMedia(page)).map {
+            if (it.referer == null) it.copy(referer = page.location()) else it
+        }
+    } + allPlayers.mapNotNull { mediaAt(it, "") }
+    return NativeSources(media, allPlayers)
+}
+
 internal suspend fun emitNativeLinks(
     provider: String,
     label: String,
@@ -58,13 +77,13 @@ internal suspend fun emitNativeLinks(
 private val nativeTypes = setOf(ExtractorLinkType.M3U8, ExtractorLinkType.DASH, ExtractorLinkType.VIDEO)
 
 internal fun iframePlayers(document: Document): List<String> =
-    document.select("iframe[src], iframe[data-src]").asSequence()
+    document.select("iframe[src], iframe[data-src], iframe[data-litespeed-src]").asSequence()
         .filterNot { frame ->
             listOf(frame.id(), frame.attr("title"), frame.className()).any {
                 it.contains("trailer", true) || it.contains("fragman", true)
             }
         }
-        .flatMap { frame -> sequenceOf(frame.absUrl("src"), frame.absUrl("data-src")) }
+        .flatMap { frame -> sequenceOf(frame.absUrl("src"), frame.absUrl("data-src"), frame.absUrl("data-litespeed-src")) }
         .filter(::isHttpsUrl)
         .distinct()
         .take(6)
