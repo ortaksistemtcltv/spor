@@ -1,0 +1,8 @@
+{
+  "name": "OSPlayer SporB",
+  "description": "Türkçe spor canlı yayın kataloğu",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/plugins.json"
+  ]
+}

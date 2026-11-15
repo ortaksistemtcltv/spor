@@ -1,0 +1,21 @@
+[
+    {
+        "fileHash": "sha256-b2be2db16a38149894967a09920af6062480f686f84f63717edb7a0bb65016fe",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/ortaksistemtcltv/spor",
+        "fileSize": 20157,
+        "status": 3,
+        "language": "tr",
+        "authors": [
+            "OSPlayer"
+        ],
+        "tvTypes": [
+            "Live"
+        ],
+        "version": 1,
+        "internalName": "SporBProvider",
+        "description": "225 SporB canl\u0131 yay\u0131n kayd\u0131",
+        "url": "https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/SporBProvider.cs3",
+        "name": "SporBProvider"
+    }
+]
