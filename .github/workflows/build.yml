@@ -1,0 +1,52 @@
+name: CloudStream eklentisini yayımla
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cloudstream-builds
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Eklentiyi derle
+        run: |
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+          python3 scripts/generate_catalogue.py
+          bash gradlew make makePluginsJson
+      - name: Depo dosyalarını hazırla
+        run: python3 scripts/publish.py
+      - name: builds dalına yayımla
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin refs/heads/builds:refs/remotes/origin/builds || true
+          if git show-ref --verify --quiet refs/remotes/origin/builds; then
+            git worktree add --detach "$RUNNER_TEMP/publish" origin/builds
+          else
+            git worktree add --detach "$RUNNER_TEMP/publish" HEAD
+            git -C "$RUNNER_TEMP/publish" rm -rf .
+          fi
+          cp build/publish/* "$RUNNER_TEMP/publish/"
+          cd "$RUNNER_TEMP/publish"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish CloudStream plugin from $GITHUB_SHA"
+            git push origin HEAD:refs/heads/builds
+          fi
+          printf '### CloudStream depo bağlantısı\n\nhttps://raw.githubusercontent.com/%s/builds/repo.json\n' "$GITHUB_REPOSITORY" >> "$GITHUB_STEP_SUMMARY"
