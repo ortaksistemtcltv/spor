@@ -18,3 +18,7 @@ Kaynaklar `main` dalında, derlenen eklenti `builds` dalındadır. Kanal veriler
 ## SPOR 5 · Patron İzle
 
 [Patron İzle 7/24 kanal kataloğu](data/spor5-patronizle-kanallar.json) 39 kayıt ve 36 benzersiz kanal sayfası içerir. JSON içindeki `channelPage` alanı web oynatıcısının adresidir. SPOR 5 grubunun CloudStream'de oynatılabilmesi için doğrudan yayın akışları gerekir.
+
+## SPOR 6 · Selçuk Sports
+
+[Selçuk Sports 7/24 TV kanal kataloğu](data/spor6-selcuksports-kanallar.json) 41 kayıt içerir. 38 kayıtta web oynatıcısı adresi vardır. Sky Sports F1, Smart Spor 2 ve TRT Spor 2 için site bir oynatıcı adresi sunmadığından `channelPage` alanı boştur. Bu iki katalog indirilebilir web sayfası envanteridir. CloudStream'de oynatılabilir grup için doğrudan akış adresleri gerekir.
