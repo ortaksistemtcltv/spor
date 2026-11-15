@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-85108ab1914b2f2e026da00fd896a8290e46a57b250e534f4223b6a13a48cb89",
+    "fileHash": "sha256-998968daa15f6ebcb9012b59c5ce55392ff0065f06008c927be533112830c13e",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/ortaksistemtcltv/spor",
-    "fileSize": 25263,
+    "fileSize": 27365,
     "status": 1,
     "language": "tr",
     "authors": [
@@ -12,7 +12,7 @@
     "tvTypes": [
       "Live"
     ],
-    "version": 7,
+    "version": 8,
     "internalName": "SporBProvider",
     "description": "Canlı spor kanalları ve yayıncı kaynakları",
     "url": "https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/SporBProvider.cs3",
