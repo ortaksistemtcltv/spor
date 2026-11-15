@@ -1,21 +1,23 @@
 [
   {
-    "fileHash": "sha256-f0d6b01a9a9b0394e878b814b8d6c0e24abcf02ec96863eaa81f4605c42fa6e5",
+    "fileHash": "sha256-155ee537c086c2f6acb0d158d3b3272e51b9a2707354045caef0405acf73315d",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/ortaksistemtcltv/spor",
-    "fileSize": 25393,
+    "fileSize": 54440,
     "status": 1,
     "language": "tr",
     "authors": [
-      "SPOR"
+      "SEYİRBOX"
     ],
     "tvTypes": [
+      "Movie",
+      "TvSeries",
       "Live"
     ],
-    "version": 10,
+    "version": 11,
     "internalName": "SporBProvider",
-    "description": "Canlı spor kanalları ve yayıncı kaynakları",
+    "description": "Film, dizi ve canlı spor kaynakları",
     "url": "https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/SporBProvider.cs3",
-    "name": "SPOR"
+    "name": "SEYİRBOX"
   }
 ]
