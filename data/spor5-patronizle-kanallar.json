@@ -3,6 +3,10 @@
   "source": "https://patronizle60.cfd/",
   "tab": "7/24",
   "linkType": "channel-page",
+  "playback": {
+    "mode": "browser",
+    "startupWaitSeconds": 5
+  },
   "channels": [
     {
       "name": "BEIN SPORTS 1",

@@ -17,8 +17,9 @@ Kaynaklar `main` dalında, derlenen eklenti `builds` dalındadır. Kanal veriler
 
 ## PATRON SPOR
 
-[Patron İzle 7/24 kanal kataloğu](data/spor5-patronizle-kanallar.json) 39 kayıt ve 36 benzersiz kanal sayfası içerir. JSON içindeki `channelPage` alanı web oynatıcısının adresidir. Doğrudan Patron İzle akışları doğrulanana kadar bu liste web kanal kataloğu olarak kullanılabilir.
+[Patron İzle 7/24 kanal kataloğu](data/spor5-patronizle-kanallar.json) 39 kayıt ve 36 benzersiz kanal sayfası içerir. SeyirBox gibi bir istemci, `channelPage` adresini web oynatıcısında veya varsayılan tarayıcıda hemen açabilir. `playback.startupWaitSeconds` sayfa yüklendikten sonra gösterilebilecek 5 saniyelik tahmini bekleme süresidir. Reklamın bitişini ve oynatmayı site yönetir. Gerekirse sayfadaki **Oynat** düğmesine basın.
 
+CloudStream’in yerleşik oynatıcısı doğrudan medya akışı beklediği için bu web sayfaları **SPOR KANALI** oynatma listesine eklenmez.
 
 [Patron Futbol 7/24 kanal kataloğu](data/patronfutbol-kanallar.json) **PATRON SPOR** için ikinci web adresini kaydeder. Sitenin 7/24 sekmesindeki 39 kanal etiketi 36 benzersiz oynatıcı sayfasına gider. Oynatıcı yolları Patron İzle kataloğundakilerle eşleşir. Her katalog kendi alan adını kullanır.
 
