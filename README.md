@@ -23,6 +23,8 @@ Film ve dizi içerikleri CloudStream oynatıcısında açılır. Kaynağın sund
 
 DMAX Program Arşivi ve TLC Program Arşivi satırları, programları ve canlı yayın kartlarıyla Film/Dizi bölümünde yer alır. Yayıncının herkese açık medya bilgisi döndürmesi gerekir.
 
+HDFilmCehennemi oynatma sayfasındaki alternatif video seçenekleri çözülür. Aynı kaynak alan adına ait bir HDFilmCehennemi sağlayıcısı cihazda kuruluysa, SEYİRBOX oynatma için onun medya çözümleyicisini de kullanabilir.
+
 Yeni kaynaklar [Ripplay](https://github.com/Ripplay/cloudstream-repo), [Nikyokki](https://github.com/nikyokki/nik-cloudstream) ve [TurkSinema](https://github.com/Wiojelt/TurkSinema) depolarındaki kataloglardan seçildi. SEYİRBOX, her kaynağın herkese açık HTML sayfalarını kendi ayrıştırıcısıyla okur.
 
 [Kaynak kayıtları](data/seyirbox-sources.json) · [Eklenti dizini](https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/plugins.json)

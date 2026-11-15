@@ -1,20 +1,85 @@
 package com.ortaksistem.seyirbox.catalog
 
+import com.lagradost.cloudstream3.APIHolder
+import com.lagradost.cloudstream3.MainAPI
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.net.URI
+import java.util.Locale
 
 internal object FilmCehennemi : WebCatalog("HDFilmCehennemi", "https://www.hdfilmcehennemi.nl/") {
     override val firstPage = home + "category/film-izle-2/"
     override fun searchPage(query: String): String = home + "search?q=" + encode(query)
+
+    override fun embeddedPlayers(document: Document): List<String> {
+        val containers = document.select(".video-container, .video-player")
+        return if (containers.isEmpty()) iframePlayers(document) else containers.flatMap(::iframePlayers).distinct()
+    }
+
+    fun installedProviderForUrl(url: String): MainAPI? = installedProvider(url)
+
+    internal fun installedProvider(url: String, candidates: Iterable<MainAPI> = APIHolder.allProviders): MainAPI? {
+        if (!supports(url)) return null
+        val host = URI(home).host.removePrefix("www.")
+        return candidates.firstOrNull { api ->
+            api.name.equals(label, ignoreCase = true) &&
+                httpsUri(api.mainUrl)?.let { it.host.removePrefix("www.") == host && it.port in setOf(-1, 443) } == true
+        }
+    }
+
+    override fun alternativePlayerUrls(document: Document): List<String> =
+        document.select(".alternative-links button.alternative-link[data-video]").asSequence()
+            .filterNot { it.text().contains("fragman", ignoreCase = true) }
+            .map { it.attr("data-video").trim() }
+            .filter { videoId.matches(it) }
+            .distinct().take(6).map { "${home}video/$it/" }.toList()
+
+    override suspend fun fetchAlternativePlayer(url: String, referer: String): Document? {
+        if (!supports(url) || !alternativePath.matches(URI(url).path.orEmpty())) return null
+        val page = read(url, searchRequest = true, referer = referer) ?: return null
+        return parseAlternativePlayer(page.body, page.url)
+    }
+
+    internal fun parseAlternativePlayer(response: String, responseUrl: String): Document? {
+        if (response.trimStart().startsWith('<')) return Jsoup.parseBodyFragment(response, responseUrl)
+        val values = when (val payload = jsonValue(response)) {
+            is String -> listOf(payload)
+            is JSONObject -> playerFragments(payload)
+            is JSONArray -> playerFragments(payload)
+            else -> listOf(response)
+        }
+        val html = values.filter { value ->
+            val text = value.lowercase(Locale.ROOT)
+            text.contains("<iframe") || text.contains("<video") || text.contains("<script")
+        }.joinToString("\n")
+        return html.takeIf(String::isNotBlank)?.let { Jsoup.parseBodyFragment(it, responseUrl) }
+    }
+
+    private fun playerFragments(payload: Any?, depth: Int = 0): List<String> {
+        if (depth > 3) return emptyList()
+        return when (payload) {
+            is String -> listOf(payload)
+            is JSONObject -> payload.keys().asSequence().take(30).flatMap { key ->
+                playerFragments(payload.opt(key), depth + 1).asSequence()
+            }.toList()
+            is JSONArray -> (0 until minOf(payload.length(), 16)).flatMap {
+                playerFragments(payload.opt(it), depth + 1)
+            }
+            else -> emptyList()
+        }
+    }
+
+    private val videoId = Regex("[A-Za-z0-9_-]{1,96}")
+    private val alternativePath = Regex("/video/[A-Za-z0-9_-]{1,96}/?")
 
     override suspend fun search(query: String): List<Card> {
         val page = read(searchPage(query), searchRequest = true) ?: return emptyList()

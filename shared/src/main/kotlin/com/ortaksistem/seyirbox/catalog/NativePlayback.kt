@@ -6,30 +6,44 @@ import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.extractorApis
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import org.json.JSONTokener
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 import java.net.URI
 
-internal data class NativeSources(val media: List<Media>, val players: List<String>)
+internal data class PlayerPage(val url: String, val referer: String)
+internal data class NativeSources(val media: List<Media>, val players: List<PlayerPage>)
 
 internal suspend fun WebCatalog.resolveMedia(
     document: Document,
     pageLoader: suspend (WebCatalog, String) -> Document?,
-): NativeSources {
-    val players = embeddedPlayers(document)
-    val sameSitePlayers = players.filter(::supports).filter { it != document.location() }.take(2)
-    val playerPages = sameSitePlayers.mapNotNull { pageLoader(this, it) }
-    val documents = listOf(document) + playerPages
-    val allPlayers = (players + playerPages.flatMap(::embeddedPlayers)).distinct()
+    alternativeLoader: suspend (WebCatalog, String, String) -> Document?,
+): NativeSources = coroutineScope {
+    val original = document.location()
+    val primaryPlayers = embeddedPlayers(document)
+    val alternativeRequests = alternativePlayerUrls(document).distinct().take(6).map { url ->
+        async { alternativeLoader(this@resolveMedia, url, original) }
+    }
+    val sameSitePlayers = primaryPlayers.filter(::supports).filter { it != original }.take(2)
+    val playerPages = sameSitePlayers.mapNotNull { pageLoader(this@resolveMedia, it) }
+    val alternatives = alternativeRequests.awaitAll().filterNotNull()
+    val documents = listOf(document) + playerPages + alternatives
+    val allPlayers = documents.flatMap { page ->
+        val referer = if (page in alternatives) original else page.location()
+        embeddedPlayers(page).map { PlayerPage(it, referer) }
+    }.distinctBy(PlayerPage::url)
     val media = documents.flatMap { page ->
         (publicMedia(page) + structuredMedia(page) + embeddedMedia(page)).map {
             if (it.referer == null) it.copy(referer = page.location()) else it
         }
-    } + allPlayers.mapNotNull { mediaAt(it, "") }
-    return NativeSources(media, allPlayers)
+    } + allPlayers.mapNotNull { mediaAt(it.url, "")?.copy(referer = it.referer) }
+    NativeSources(media, allPlayers)
 }
 
 internal suspend fun emitNativeLinks(
@@ -37,7 +51,7 @@ internal suspend fun emitNativeLinks(
     label: String,
     document: Document,
     media: List<Media>,
-    embeds: List<String>,
+    embeds: List<PlayerPage>,
     subtitleCallback: (SubtitleFile) -> Unit,
     callback: (ExtractorLink) -> Unit,
 ): Boolean {
@@ -54,7 +68,7 @@ internal suspend fun emitNativeLinks(
             item.resolution?.let { quality = it }
         })
     }
-    for (url in embeds.distinct().take(6)) {
+    for ((url, referer) in embeds.distinctBy(PlayerPage::url).take(10)) {
         if (url in seen) continue
         val player = httpsUri(url) ?: continue
         if (player.port !in setOf(-1, 443)) continue
@@ -62,8 +76,8 @@ internal suspend fun emitNativeLinks(
             httpsUri(it.mainUrl)?.host.equals(player.host, ignoreCase = true)
         } ?: continue
         try {
-            extractor.getUrl(url, document.location(), subtitleCallback) { link ->
-                if (isHttpsUrl(link.url) && link.type in nativeTypes && seen.add(link.url)) callback(link)
+            extractor.getUrl(url, referer, subtitleCallback) { link ->
+                if (isNativeLink(link) && seen.add(link.url)) callback(link)
             }
         } catch (error: CancellationException) {
             throw error
@@ -76,7 +90,9 @@ internal suspend fun emitNativeLinks(
 
 private val nativeTypes = setOf(ExtractorLinkType.M3U8, ExtractorLinkType.DASH, ExtractorLinkType.VIDEO)
 
-internal fun iframePlayers(document: Document): List<String> =
+internal fun isNativeLink(link: ExtractorLink): Boolean = isHttpsUrl(link.url) && link.type in nativeTypes
+
+internal fun iframePlayers(document: Element): List<String> =
     document.select("iframe[src], iframe[data-src], iframe[data-litespeed-src]").asSequence()
         .filterNot { frame ->
             listOf(frame.id(), frame.attr("title"), frame.className()).any {

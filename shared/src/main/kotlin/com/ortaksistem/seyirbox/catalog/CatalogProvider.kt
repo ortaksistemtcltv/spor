@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.MainAPI
+import com.lagradost.cloudstream3.MovieLoadResponse
 import com.lagradost.cloudstream3.MainPageRequest
 import com.lagradost.cloudstream3.SearchResponse
 import com.lagradost.cloudstream3.SubtitleFile
@@ -18,18 +19,24 @@ import com.lagradost.cloudstream3.newMovieSearchResponse
 import com.lagradost.cloudstream3.newTvSeriesLoadResponse
 import com.lagradost.cloudstream3.newTvSeriesSearchResponse
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.jsoup.nodes.Document
+import java.util.concurrent.ConcurrentHashMap
 
 internal class CatalogProvider(
     displayName: String,
     private val contentType: TvType,
     private val sources: List<WebCatalog>,
     private val pageLoader: suspend (WebCatalog, String) -> Document? = { source, url -> source.fetch(url) },
+    private val alternativeLoader: suspend (WebCatalog, String, String) -> Document? = { source, url, referer ->
+        source.fetchAlternativePlayer(url, referer)
+    },
+    private val findInstalledFilmProvider: (String) -> MainAPI? = FilmCehennemi::installedProviderForUrl,
 ) : MainAPI() {
     override var name = displayName
     override var mainUrl = sources.first().home
@@ -56,7 +63,9 @@ internal class CatalogProvider(
             next = pageLoader(source, url)?.let(source::nextPage)
         }
         val document = next?.takeIf(visited::add)?.let { pageLoader(source, it) }
-        val programs = document?.let(source::cards).orEmpty()
+        val programs = document?.let(source::cards).orEmpty().ifEmpty {
+            if (source === FilmCehennemi) installedFilmPage(source, page) else emptyList()
+        }
         val broadcaster = source as? BroadcasterCatalog
         val items = buildList {
             if (page == 1 && broadcaster != null) add(item(broadcaster.liveCard, source))
@@ -86,6 +95,16 @@ internal class CatalogProvider(
         }
         val document = pageLoader(source, url)
         val detail = document?.let { source.detail(it) }
+        if (detail == null && source === FilmCehennemi) {
+            val installed = findInstalledFilmProvider(url)
+            val movie = installed?.load(url) as? MovieLoadResponse
+            if (movie != null) {
+                return newMovieLoadResponse(movie.name, url, contentType, url) {
+                    posterUrl = movie.posterUrl
+                    plot = movie.plot
+                }
+            }
+        }
         if (detail == null) {
             if (!source.isDetailUrl(url)) return null
             throw ErrorLoadingException("${source.label} içerik bilgilerini şu anda sunamıyor.")
@@ -123,9 +142,51 @@ internal class CatalogProvider(
     ): Boolean {
         val page = data.removePrefix(LEGACY_WEB_DATA)
         val source = sources.firstOrNull { it.handles(page) } ?: return false
+        if (source === FilmCehennemi) {
+            val installed = findInstalledFilmProvider(page)
+            if (installed != null && emitInstalledLinks(installed, page, isCasting, subtitleCallback, callback)) return true
+        }
         val document = pageLoader(source, page) ?: return false
-        val streams = source.resolveMedia(document, pageLoader)
+        val streams = source.resolveMedia(document, pageLoader, alternativeLoader)
         return emitNativeLinks(name, source.label, document, streams.media, streams.players, subtitleCallback, callback)
+    }
+
+    private suspend fun installedFilmPage(source: FilmCehennemi, page: Int): List<Card> {
+        if (page != 1) return emptyList()
+        val installed = findInstalledFilmProvider(source.firstPage) ?: return emptyList()
+        val row = installed.mainPage.firstOrNull { it.data.endsWith("/home/") }
+            ?: installed.mainPage.firstOrNull() ?: return emptyList()
+        return try {
+            installed.getMainPage(page, MainPageRequest(row.name, row.data, row.horizontalImages))
+                ?.items.orEmpty().flatMap { it.list }
+                .filter { it.type == TvType.Movie && source.supports(it.url) }
+                .map { Card(it.name, it.url, it.posterUrl) }
+                .distinctBy(Card::url)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private suspend fun emitInstalledLinks(
+        provider: MainAPI,
+        page: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ): Boolean {
+        val urls = ConcurrentHashMap.newKeySet<String>()
+        try {
+            provider.loadLinks(page, isCasting, subtitleCallback) { link ->
+                if (isNativeLink(link) && urls.add(link.url)) callback(link)
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            // Use SEYİRBOX's own resolver when the installed provider returns no media.
+        }
+        return urls.isNotEmpty()
     }
 
     private fun item(card: Card, source: WebCatalog): SearchResponse = when {

@@ -55,6 +55,10 @@ internal abstract class WebCatalog(val label: String, val home: String) {
 
     open fun embeddedPlayers(document: Document): List<String> = iframePlayers(document)
 
+    open fun alternativePlayerUrls(document: Document): List<String> = emptyList()
+
+    open suspend fun fetchAlternativePlayer(url: String, referer: String): Document? = null
+
     open fun isDetailUrl(url: String): Boolean = handles(url) &&
         httpsUri(url)?.path?.trim('/')?.isNotBlank() == true
 
