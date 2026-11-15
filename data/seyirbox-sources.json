@@ -6,8 +6,8 @@
       "sources": [
         {
           "name": "HDFİLMCEHENNEMİ",
-          "catalogPage": "https://hdfilmcehennemiv6.com/filmler",
-          "status": "catalog-only"
+          "catalogPage": "https://www.hdfilmcehennemi.nl/category/film-izle-2/",
+          "status": "preview"
         },
         {
           "name": "FİLMBOX",
@@ -20,9 +20,9 @@
       "tvType": "TvSeries",
       "sources": [
         {
-          "name": "HDFİLMCEHENNEMİ",
-          "catalogPage": "https://hdfilmcehennemiv6.com/diziler",
-          "status": "catalog-only"
+          "name": "DİZİBOX",
+          "catalogPage": "https://www.dizibox.live/dizi-arsivi/",
+          "status": "preview"
         }
       ]
     },

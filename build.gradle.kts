@@ -42,7 +42,14 @@ subprojects {
     }
 
     android {
-        namespace = "com.ortaksistem.sporb"
+        namespace = when (project.name) {
+            "FilmProvider" -> "com.ortaksistem.seyirbox.film"
+            "DiziProvider" -> "com.ortaksistem.seyirbox.dizi"
+            else -> "com.ortaksistem.sporb"
+        }
+        if (project.name in setOf("FilmProvider", "DiziProvider")) {
+            sourceSets.getByName("main").java.srcDir(rootProject.file("shared/src/main/kotlin"))
+        }
 
         defaultConfig {
             minSdk = 21
@@ -73,6 +80,10 @@ subprojects {
         add("cloudstream", "com.lagradost:cloudstream3:pre-release")
 
         implementation(kotlin("stdlib"))
+        if (project.name in setOf("FilmProvider", "DiziProvider")) {
+            add("compileOnly", "org.jsoup:jsoup:1.18.3")
+            add("compileOnly", "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.0")
+        }
     }
 }
 

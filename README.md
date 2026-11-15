@@ -19,11 +19,15 @@ Kaynaklar `main` dalında, derlenen eklenti `builds` dalındadır. Kanal veriler
 
 | Eklenti | Kaynak grupları | Durum |
 | --- | --- | --- |
-| FİLM | HDFİLMCEHENNEMİ, FİLMBOX | HDFİLMCEHENNEMİ arşiv sayfası kayıtlı. FİLMBOX adresi ve oynatma entegrasyonları bekliyor. |
-| DİZİ | HDFİLMCEHENNEMİ | Dizi arşiv sayfası kayıtlı. Sezon, bölüm ve oynatma entegrasyonu bekliyor. |
+| FİLM | HDFİLMCEHENNEMİ, ardından eklenen film siteleri | Önizleme derlemesi. İlk sitenin canlı erişimi doğrulanmayı bekliyor. |
+| DİZİ | DİZİBOX, ardından eklenen dizi siteleri | Önizleme derlemesi. İlk sitenin canlı erişimi doğrulanmayı bekliyor. |
 | SPOR | Yayıncı Kaynakları, JUSTIN SPOR, TRGOALS, DOĞU SPOR, VAVOO SPOR | CloudStream’de SPOR KANALI olarak yayında. |
 
-[Kaynak kayıtları](data/seyirbox-sources.json) film ve dizi katalog sayfalarını listeler. CloudStream’de kurulan eklentiler `builds/plugins.json` dosyasında yer alır.
+[Kaynak kayıtları](data/seyirbox-sources.json) site sırasını gösterir. Film ve dizi adaptörlerinin çalışma sırası ilgili eklentinin Kotlin kaynak listesinden gelir. Yeni bir kaynak eklemek için ortak `WebCatalog` sınıfını uygulayıp ilgili eklentinin bu listesine ekleyin.
+
+Önizleme modüllerini yerel olarak derlemek için `bash gradlew -PpreviewCatalogs=true make makePluginsJson` komutunu çalıştırın. FİLM ve DİZİ’nin canlı site kontrolleri tamamlandığında yayın derlemesine alınabilir. Kurulabilir sürümler `builds/plugins.json` dosyasında listelenir.
+
+FİLM ve DİZİ doğrudan HTTPS HLS, DASH, MP4 ve WebM bağlantılarını oynatıcıya gönderir. Site arayüzü ve açılır pencereler CloudStream’de render edilmez. Yayın akışının içindeki reklamlar oynatma adresinin parçası olabilir. Site bir web oynatıcı sayfası sunuyorsa ve HTML’de doğrudan medya yoksa üçüncü taraf çerçeve adresi video olarak gösterilmez.
 
 ## PATRON SPOR
 
