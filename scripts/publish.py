@@ -25,4 +25,7 @@ manifest = {
     "pluginLists": [f"{base}/plugins.json"],
 }
 (publish / "repo.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-print(f"CloudStream depo bağlantısı: {base}/repo.json")
+main_manifest = json.loads((root / "repo.json").read_text(encoding="utf-8"))
+if main_manifest != manifest:
+    raise SystemExit("Depo manifesti ve yayın adresi eşleşmiyor.")
+print(f"CloudStream depo bağlantısı: https://raw.githubusercontent.com/{repo}/main/repo.json")

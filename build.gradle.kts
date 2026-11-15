@@ -13,7 +13,7 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:8.7.3")
         // Cloudstream gradle plugin which makes everything work and builds plugins
-        classpath("com.github.recloudstream:gradle:-SNAPSHOT")
+        classpath("com.github.recloudstream:gradle:master-SNAPSHOT")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0")
     }
 }
@@ -42,7 +42,7 @@ subprojects {
     }
 
     android {
-        namespace = "recloudstream"
+        namespace = "com.ortaksistem.sporb"
 
         defaultConfig {
             minSdk = 21
@@ -70,7 +70,7 @@ subprojects {
     dependencies {
         val implementation by configurations
 
-        implementation("com.github.recloudstream.cloudstream:library:-SNAPSHOT")
+        add("cloudstream", "com.lagradost:cloudstream3:pre-release")
 
         implementation(kotlin("stdlib"))
     }

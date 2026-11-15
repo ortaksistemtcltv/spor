@@ -52,4 +52,4 @@ jobs:
             git commit -m "Publish CloudStream plugin from $GITHUB_SHA"
             git push origin HEAD:refs/heads/builds
           fi
-          printf '### CloudStream depo bağlantısı\n\nhttps://raw.githubusercontent.com/%s/builds/repo.json\n' "$GITHUB_REPOSITORY" >> "$GITHUB_STEP_SUMMARY"
+          printf '### CloudStream depo bağlantısı\n\nhttps://raw.githubusercontent.com/%s/main/repo.json\n' "$GITHUB_REPOSITORY" >> "$GITHUB_STEP_SUMMARY"
