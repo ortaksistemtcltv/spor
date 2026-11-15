@@ -1,0 +1,37 @@
+{
+  "groups": [
+    {
+      "name": "FİLM",
+      "tvType": "Movie",
+      "sources": [
+        {
+          "name": "HDFİLMCEHENNEMİ",
+          "catalogPage": "https://hdfilmcehennemiv6.com/filmler",
+          "status": "catalog-only"
+        },
+        {
+          "name": "FİLMBOX",
+          "status": "address-pending"
+        }
+      ]
+    },
+    {
+      "name": "DİZİ",
+      "tvType": "TvSeries",
+      "sources": [
+        {
+          "name": "HDFİLMCEHENNEMİ",
+          "catalogPage": "https://hdfilmcehennemiv6.com/diziler",
+          "status": "catalog-only"
+        }
+      ]
+    },
+    {
+      "name": "SPOR",
+      "tvType": "Live",
+      "pluginInternalName": "SporBProvider",
+      "providerName": "SPOR KANALI",
+      "status": "published"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
-# SPOR · CloudStream
+# SEYİRBOX · CloudStream
 
-Türkçe spor yayın kataloğu. Eklenti, dört kaynak altında 225 benzersiz yayın adresi içerir.
+Türkçe film, dizi ve spor eklentileri için CloudStream deposu. Şu anda SPOR eklentisi yayında.
 
 1. CloudStream’de **Ayarlar → Eklentiler → Depo Ekle** bölümünü aç.
 2. [Depo adresini](https://raw.githubusercontent.com/ortaksistemtcltv/spor/main/repo.json) ekle.
@@ -14,6 +14,16 @@ https://raw.githubusercontent.com/ortaksistemtcltv/spor/main/repo.json
 [Depo manifesti](./repo.json) · [Eklenti dizini](https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/plugins.json)
 
 Kaynaklar `main` dalında, derlenen eklenti `builds` dalındadır. Kanal verileri `data/channels.json` dosyasındadır. Yayın erişimi hizmet sağlayıcısına göre değişebilir.
+
+## Eklentiler ve kaynaklar
+
+| Eklenti | Kaynak grupları | Durum |
+| --- | --- | --- |
+| FİLM | HDFİLMCEHENNEMİ, FİLMBOX | HDFİLMCEHENNEMİ arşiv sayfası kayıtlı. FİLMBOX adresi ve oynatma entegrasyonları bekliyor. |
+| DİZİ | HDFİLMCEHENNEMİ | Dizi arşiv sayfası kayıtlı. Sezon, bölüm ve oynatma entegrasyonu bekliyor. |
+| SPOR | Yayıncı Kaynakları, JUSTIN SPOR, TRGOALS, DOĞU SPOR, VAVOO SPOR | CloudStream’de SPOR KANALI olarak yayında. |
+
+[Kaynak kayıtları](data/seyirbox-sources.json) film ve dizi katalog sayfalarını listeler. CloudStream’de kurulan eklentiler `builds/plugins.json` dosyasında yer alır.
 
 ## PATRON SPOR
 
