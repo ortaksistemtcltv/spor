@@ -79,7 +79,14 @@ class SporBProvider : MainAPI() {
     private fun streamsFor(channel: SportsChannel): List<Stream> {
         val key = channelKey(channel.name)
         val broadcaster = officialByName[key]
-        val matches = mirrorsByName[key].orEmpty()
+        val alternateKey = if (channel.source == "Vavoo Turkey") {
+            val baseName = key.replace(Regex(" (?:[0-9]{3,4}p ?feed|live during events only|match time)$"), "")
+            baseName.takeIf { it != key && it.matches(Regex("bein sports [1-5]")) }
+        } else {
+            null
+        }
+        val matches = mirrorsByName[key].orEmpty() +
+            (alternateKey?.let { mirrorsByName[it] }.orEmpty())
         val matchingChannels = if (broadcaster != null) {
             if (channel.id == broadcaster.id) listOf(broadcaster) else {
                 listOf(broadcaster, channel) + matches
