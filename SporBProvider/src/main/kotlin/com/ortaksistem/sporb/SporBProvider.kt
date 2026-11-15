@@ -23,17 +23,17 @@ class SporBProvider : MainAPI() {
     override val hasMainPage = true
     override val mainPage = mainPageOf(
         "resmi" to "Yayıncı Kaynakları",
-        "Tvjustin" to "SPOR 1",
-        "Trgoals" to "SPOR 2",
-        "DoğuSpor" to "SPOR 3",
-        "Vavoo Turkey" to "SPOR 4",
+        "Tvjustin" to "JUSTIN SPOR",
+        "Trgoals" to "TRGOALS",
+        "DoğuSpor" to "DOĞU SPOR",
+        "Vavoo Turkey" to "VAVOO SPOR",
     )
 
     private val displaySourceNames = mapOf(
-        "Tvjustin" to "SPOR 1",
-        "Trgoals" to "SPOR 2",
-        "DoğuSpor" to "SPOR 3",
-        "Vavoo Turkey" to "SPOR 4",
+        "Tvjustin" to "JUSTIN SPOR",
+        "Trgoals" to "TRGOALS",
+        "DoğuSpor" to "DOĞU SPOR",
+        "Vavoo Turkey" to "VAVOO SPOR",
     )
 
     private fun sourceLabel(source: String): String = displaySourceNames[source] ?: source
