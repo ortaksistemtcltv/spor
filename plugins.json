@@ -1,9 +1,9 @@
 [
     {
-        "fileHash": "sha256-525c7e0933cce74b33e1519a001291afc760156ccf69f4fe9d731a6bc16a73b4",
+        "fileHash": "sha256-df94a798b2a6f6b857f544cd6232ac98de00e7e1a3bdac049b50e516f07ae4ad",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/ortaksistemtcltv/spor",
-        "fileSize": 21549,
+        "fileSize": 24357,
         "status": 1,
         "language": "tr",
         "authors": [
@@ -12,7 +12,7 @@
         "tvTypes": [
             "Live"
         ],
-        "version": 3,
+        "version": 4,
         "internalName": "SporBProvider",
         "description": "225 SporB kayd\u0131 ve yay\u0131nc\u0131 kaynaklar\u0131",
         "url": "https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/SporBProvider.cs3",
