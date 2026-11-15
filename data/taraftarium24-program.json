@@ -1,0 +1,47 @@
+{
+  "group": "TARAFTARIUM24",
+  "source": "https://taraftarium24.run/",
+  "linkType": "schedule-page",
+  "sections": [
+    {
+      "name": "Tüm Branşlar",
+      "page": "https://taraftarium24.run/"
+    },
+    {
+      "name": "Futbol",
+      "page": "https://taraftarium24.run/football"
+    },
+    {
+      "name": "Basketbol",
+      "page": "https://taraftarium24.run/basketball"
+    },
+    {
+      "name": "Amerikan Futbolu",
+      "page": "https://taraftarium24.run/sport?sport=american-football"
+    },
+    {
+      "name": "Dövüş Sporları",
+      "page": "https://taraftarium24.run/fight"
+    },
+    {
+      "name": "Buz Hokeyi",
+      "page": "https://taraftarium24.run/hockey"
+    },
+    {
+      "name": "Motor Sporları",
+      "page": "https://taraftarium24.run/motorsports"
+    },
+    {
+      "name": "Tenis",
+      "page": "https://taraftarium24.run/tennis"
+    },
+    {
+      "name": "Beyzbol",
+      "page": "https://taraftarium24.run/baseball"
+    },
+    {
+      "name": "Kriket",
+      "page": "https://taraftarium24.run/sport?sport=cricket"
+    }
+  ]
+}

@@ -19,6 +19,19 @@ Kaynaklar `main` dalında, derlenen eklenti `builds` dalındadır. Kanal veriler
 
 [Patron İzle 7/24 kanal kataloğu](data/spor5-patronizle-kanallar.json) 39 kayıt ve 36 benzersiz kanal sayfası içerir. JSON içindeki `channelPage` alanı web oynatıcısının adresidir. Doğrudan Patron İzle akışları doğrulanana kadar bu liste web kanal kataloğu olarak kullanılabilir.
 
+
+[Patron Futbol 7/24 kanal kataloğu](data/patronfutbol-kanallar.json) **PATRON SPOR** için ikinci web adresini kaydeder. Sitenin 7/24 sekmesindeki 39 kanal etiketi 36 benzersiz oynatıcı sayfasına gider. Oynatıcı yolları Patron İzle kataloğundakilerle eşleşir. Her katalog kendi alan adını kullanır.
+
 ## SELCUK SPOR
 
 [Selçuk Sports 7/24 TV kanal kataloğu](data/spor6-selcuksports-kanallar.json) 41 kayıt içerir. 38 kayıtta web oynatıcısı adresi vardır. Sky Sports F1, Smart Spor 2 ve TRT Spor 2 için site bir oynatıcı adresi sunmadığından `channelPage` alanı boştur. Doğrudan Selçuk Sports akışları doğrulanana kadar bu liste web kanal kataloğu olarak kullanılabilir.
+
+## TARAFTARIUM
+
+[Taraftarium canlı TV kanal kataloğu](data/taraftarium-canli-kanallar.json), `taraftarium.co/canli/` sayfasında **7/24** olarak işaretlenen 53 benzersiz web oynatıcı sayfasını içerir.
+
+## TARAFTARIUM24
+
+[Taraftarium24 karşılaşma rehberi](data/taraftarium24-program.json), `taraftarium24.run` üzerindeki değişken maç programına ve spor kategorilerine bağlantı verir. Maç ayrıntısındaki yayın seçenekleri sitenin web oynatıcı sayfasını açar.
+
+Bu üç dosya GitHub'daki web kataloglarıdır. CloudStream cihazındaki oynatılabilir gruplar `data/channels.json` üzerinden oluşturulur.
