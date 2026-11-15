@@ -1,8 +1,8 @@
 {
-  "name": "SEYİRBOX",
-  "description": "Türkçe CloudStream eklenti deposu · Film, Dizi ve Spor",
+  "name": "SEYİRBOX · Önizleme",
+  "description": "FİLM ve DİZİ kaynaklarını cihazda denemek için",
   "manifestVersion": 1,
   "pluginLists": [
-    "https://raw.githubusercontent.com/ortaksistemtcltv/spor/builds/plugins.json"
+    "https://raw.githubusercontent.com/ortaksistemtcltv/spor/preview/plugins.json"
   ]
 }
